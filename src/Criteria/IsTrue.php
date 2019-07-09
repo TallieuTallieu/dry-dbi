@@ -15,9 +15,9 @@ class IsTrue implements CriteriaInterface
 
 	/**
 	 * IsTrue constructor.
-	 * @param string $column
+	 * @param mixed $column
 	 */
-	public function __construct(string $column)
+	public function __construct($column)
 	{
 		$this->column = $column;
 	}

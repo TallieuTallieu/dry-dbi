@@ -11,15 +11,15 @@ class IsNull implements CriteriaInterface
 	/**
 	 * @var string
 	 */
-	private $field;
+	private $column;
 
 	/**
 	 * IsNull constructor.
-	 * @param string $field
+	 * @param mixed $column
 	 */
-	public function __construct(string $field)
+	public function __construct($column)
 	{
-		$this->field = $field;
+		$this->column = $column;
 	}
 
 	/**
@@ -27,6 +27,6 @@ class IsNull implements CriteriaInterface
 	 */
 	public function apply(QueryBuilder $queryBuilder)
 	{
-		$queryBuilder->where($this->field, 'IS', new Raw( 'NULL' ));
+		$queryBuilder->where($this->column, 'IS', new Raw( 'NULL' ));
 	}
 }

@@ -19,10 +19,10 @@ class OrderBy implements CriteriaInterface
 
 	/**
 	 * OrderBy constructor.
-	 * @param string $column
+	 * @param mixed $column
 	 * @param string $order
 	 */
-	public function __construct(string $column, string $order = 'ASC')
+	public function __construct($column, string $order = 'ASC')
 	{
 		$this->column = $column;
 		$this->order = $order;

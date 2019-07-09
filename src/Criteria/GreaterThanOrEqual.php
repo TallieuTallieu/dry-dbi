@@ -16,10 +16,10 @@ class GreaterThanOrEqual implements CriteriaInterface
 
 	/**
 	 * GreaterThanOrEqual constructor.
-	 * @param string $column
+	 * @param mixed $column
 	 * @param $value
 	 */
-	public function __construct(string $column, $value)
+	public function __construct($column, $value)
 	{
 		$this->column = $column;
 		$this->value = $value;
