@@ -20,6 +20,11 @@ class QueryBuilder extends BuildHandler
 	private $where = [];
 
 	/**
+	 * @var bool $isGroupingMode
+	 */
+	private $isGroupingMode = false;
+
+	/**
 	 * @var array
 	 */
 	private $orderBy = [];
@@ -86,14 +91,83 @@ class QueryBuilder extends BuildHandler
 	 */
 	public function where($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
 	{
-		$this->where[] = [
+		$whereStatement = [
 			$this->createStatement($field, true),
 			$operator,
 			$this->createStatement($value),
 			$connectBefore,
 		];
 
+		if ($this->isGroupingMode) {
+			$this->where[count($this->where)-1][0][] = $whereStatement;
+			return $this;
+		}
+
+		$this->where[] = $whereStatement;
 		return $this;
+	}
+
+
+
+	/**
+	 * @param callable $call
+	 * @param $connectBefore
+	 */
+	public function whereGroup(callable $call, string $connectBefore = 'AND')
+	{
+		$this->isGroupingMode = true;
+
+		$this->where[] = [
+			[],
+			$connectBefore,
+		];
+
+		call_user_func_array($call, [$this, ]);
+		$this->isGroupingMode = false;
+	}
+
+	/**
+	 * @param $field
+	 * @param string $operator
+	 * @param $value
+	 * @param $connectBefore
+	 * @return QueryBuilder
+	 */
+	public function having($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
+	{
+		$havingStatement = [
+			$this->createStatement($field, true),
+			$operator,
+			$this->createStatement($value),
+			$connectBefore,
+		];
+
+		if ($this->isGroupingMode) {
+			$this->having[count($this->having)-1][0][] = $havingStatement;
+			return $this;
+		}
+
+		$this->having[] = $havingStatement;
+		return $this;
+	}
+
+
+
+	/**
+	 * @param callable $call
+	 * @param $connectBefore
+	 */
+	public function havingGroup(callable $call, string $connectBefore = 'AND')
+	{
+		$this->isGroupingMode = true;
+
+		$this->having[] = [
+			[],
+			$connectBefore,
+		];
+
+		call_user_func_array($call, [$this, ]);
+		$this->isGroupingMode = false;
 	}
 
 	/**
@@ -121,25 +195,6 @@ class QueryBuilder extends BuildHandler
 	public function groupBy($column): QueryBuilder
 	{
 		$this->groupBy[] = $this->createStatement($column, true);
-		return $this;
-	}
-
-	/**
-	 * @param $field
-	 * @param string $operator
-	 * @param $value
-	 * @param $connectBefore
-	 * @return QueryBuilder
-	 */
-	public function having($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
-	{
-		$this->having[] = [
-			$this->createStatement($field, true),
-			$operator,
-			$this->createStatement($value),
-			$connectBefore,
-		];
-
 		return $this;
 	}
 
@@ -237,30 +292,64 @@ class QueryBuilder extends BuildHandler
 	 */
 	private function buildWhere()
 	{
-		if (!count($this->where)) {
+		$this->buildConditions($this->where, 'WHERE');
+	}
+
+	private function buildConditions(array $statements, string $keyword)
+	{
+		if (!count($statements)) {
 			return;
 		}
 
-		$this->addToQuery(' WHERE ');
+		$this->addToQuery(' '.$keyword.' ');
 
 		$i = 0;
-		foreach ($this->where as $where) {
+		foreach ($statements as $statement) {
 
-			$column = $where[0];
-			$operator = $where[1];
-			$value = $where[2];
-			$connectBefore = $where[3];
+			$isGroup = (is_array($statement[0]));
 
-			if ($i !== 0) {
-				$this->addToQuery(' '.$connectBefore.' ');
+			if ($isGroup) {
+
+				if ($i !== 0) {
+					$this->addToQuery(' '.$statement[1].' ');
+				}
+
+				$this->addToQuery(' ( ');
+
+				$j = 0;
+				foreach ($statement[0] as $subStatement) {
+					$this->buildCondition($subStatement, ($j === 0));
+					$j++;
+				}
+
+				$this->addToQuery(' ) ');
+
+			} else {
+
+				$this->buildCondition($statement, ($i === 0));
 			}
-
-			$this->addToQuery($column->getValue().' '.$operator.' '.$value->getValue());
-			$this->addParameters($column->getBindings());
-			$this->addParameters($value->getBindings());
 
 			$i++;
 		}
+	}
+
+	/**
+	 * @param array $statement
+	 * @param bool $isFirst
+	 */
+	private function buildCondition(array $statement, bool $isFirst = true)
+	{
+		$column = $statement[0];
+		$operator = $statement[1];
+		$value = $statement[2];
+
+		if (! $isFirst) {
+			$this->addToQuery(' '.$statement[3].' ');
+		}
+
+		$this->addToQuery($column->getValue().' '.$operator.' '.$value->getValue());
+		$this->addParameters($column->getBindings());
+		$this->addParameters($value->getBindings());
 	}
 
 	/**
@@ -323,30 +412,7 @@ class QueryBuilder extends BuildHandler
 	 */
 	private function buildHaving()
 	{
-		if (!count($this->having)) {
-			return;
-		}
-
-		$this->addToQuery(' HAVING ');
-
-		$i = 0;
-		foreach ($this->having as $having) {
-
-			$column = $having[0];
-			$operator = $having[1];
-			$value = $having[2];
-			$connectBefore = $having[3];
-
-			if ($i !== 0) {
-				$this->addToQuery(' '.$connectBefore.' ');
-			}
-
-			$this->addToQuery($column->getValue().' '.$operator.' '.$value->getValue());
-			$this->addParameters($column->getBindings());
-			$this->addParameters($value->getBindings());
-
-			$i++;
-		}
+		$this->buildConditions($this->having, 'HAVING');
 	}
 
 	/**
