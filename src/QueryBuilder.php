@@ -81,11 +81,18 @@ class QueryBuilder extends BuildHandler
 	 * @param $field
 	 * @param string $operator
 	 * @param $value
+	 * @param $connectBefore
 	 * @return QueryBuilder
 	 */
-	public function where($field, string $operator, $value): QueryBuilder
+	public function where($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
 	{
-		$this->where[] = [$this->createStatement($field, true), $operator, $this->createStatement($value),];
+		$this->where[] = [
+			$this->createStatement($field, true),
+			$operator,
+			$this->createStatement($value),
+			$connectBefore,
+		];
+
 		return $this;
 	}
 
@@ -121,11 +128,18 @@ class QueryBuilder extends BuildHandler
 	 * @param $field
 	 * @param string $operator
 	 * @param $value
+	 * @param $connectBefore
 	 * @return QueryBuilder
 	 */
-	public function having($field, string $operator, $value): QueryBuilder
+	public function having($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
 	{
-		$this->having[] = [$this->createStatement($field, true), $operator, $this->createStatement($value),];
+		$this->having[] = [
+			$this->createStatement($field, true),
+			$operator,
+			$this->createStatement($value),
+			$connectBefore,
+		];
+
 		return $this;
 	}
 
@@ -227,20 +241,26 @@ class QueryBuilder extends BuildHandler
 			return;
 		}
 
-		$whereStatements = [];
+		$this->addToQuery(' WHERE ');
 
+		$i = 0;
 		foreach ($this->where as $where) {
 
 			$column = $where[0];
 			$operator = $where[1];
 			$value = $where[2];
+			$connectBefore = $where[3];
 
-			$whereStatements[] = $column->getValue() . ' ' . $operator . ' ' . $value->getValue();
+			if ($i !== 0) {
+				$this->addToQuery(' '.$connectBefore.' ');
+			}
+
+			$this->addToQuery($column->getValue().' '.$operator.' '.$value->getValue());
 			$this->addParameters($column->getBindings());
 			$this->addParameters($value->getBindings());
-		}
 
-		$this->addToQuery(' WHERE ' . implode(' AND ', $whereStatements));
+			$i++;
+		}
 	}
 
 	/**
@@ -307,21 +327,26 @@ class QueryBuilder extends BuildHandler
 			return;
 		}
 
-		$havingStatements = [];
+		$this->addToQuery(' HAVING ');
 
+		$i = 0;
 		foreach ($this->having as $having) {
 
 			$column = $having[0];
 			$operator = $having[1];
 			$value = $having[2];
+			$connectBefore = $having[3];
 
-			$havingStatements[] = $column->getValue() . ' ' . $operator . ' ' . $value->getValue();
+			if ($i !== 0) {
+				$this->addToQuery(' '.$connectBefore.' ');
+			}
 
+			$this->addToQuery($column->getValue().' '.$operator.' '.$value->getValue());
 			$this->addParameters($column->getBindings());
 			$this->addParameters($value->getBindings());
-		}
 
-		$this->addToQuery(' HAVING ' . implode(' AND ', $havingStatements));
+			$i++;
+		}
 	}
 
 	/**
