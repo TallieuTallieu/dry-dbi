@@ -107,8 +107,6 @@ class QueryBuilder extends BuildHandler
 		return $this;
 	}
 
-
-
 	/**
 	 * @param callable $call
 	 * @param $connectBefore
@@ -151,8 +149,6 @@ class QueryBuilder extends BuildHandler
 		return $this;
 	}
 
-
-
 	/**
 	 * @param callable $call
 	 * @param $connectBefore
@@ -180,7 +176,6 @@ class QueryBuilder extends BuildHandler
 		$field = $this->createStatement($column, true);
 
 		$this->orderBy = array_filter($this->orderBy, function($value) use($field) {
-
 			return ($value[0]->getValue() !== $field->getValue());
 		});
 
@@ -398,7 +393,6 @@ class QueryBuilder extends BuildHandler
 			$groupByStatements = [];
 
 			foreach ($this->groupBy as $groupBy) {
-
 				$groupByStatements[] = $groupBy->getValue();
 				$this->addParameters($groupBy->getBindings());
 			}
