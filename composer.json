@@ -2,8 +2,15 @@
     "name": "dietervyncke/dry-dbi",
     "description": "Improved DRY databases",
     "type": "library",
-    "minimum-stability": "dev",
-    "require": {},
+    "authors": [
+        {
+            "name": "Dieter Vyncke",
+            "email": "vynckedieter@gmail.com"
+        }
+    ],
+    "require": {
+        "reinvanoyen/oak": "^1.0.0"
+    },
     "autoload": {
         "psr-4": {
             "Tnt\\Dbi\\": "src/"
