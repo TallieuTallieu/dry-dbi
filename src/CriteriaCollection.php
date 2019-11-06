@@ -7,24 +7,24 @@ use Tnt\Dbi\Contracts\CriteriaInterface;
 
 class CriteriaCollection implements CriteriaCollectionInterface
 {
-	/**
-	 * @var array
-	 */
-	private $criteria = [];
+    /**
+     * @var array
+     */
+    private $criteria = [];
 
-	/**
-	 * @param CriteriaInterface $criteria
-	 */
-	public function addCriteria(CriteriaInterface $criteria)
-	{
-		$this->criteria[] = $criteria;
-	}
+    /**
+     * @param CriteriaInterface $criteria
+     */
+    public function addCriteria(CriteriaInterface $criteria)
+    {
+        $this->criteria[] = $criteria;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getCriteria(): array
-	{
-		return $this->criteria;
-	}
+    /**
+     * @return array
+     */
+    public function getCriteria(): array
+    {
+        return $this->criteria;
+    }
 }

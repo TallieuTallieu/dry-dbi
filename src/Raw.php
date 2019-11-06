@@ -6,40 +6,40 @@ use Tnt\Dbi\Contracts\StatementInterface;
 
 class Raw implements StatementInterface
 {
-	/**
-	 * @var string
-	 */
-	private $value;
+    /**
+     * @var string
+     */
+    private $value;
 
-	/**
-	 * @var array
-	 */
-	private $bindings;
+    /**
+     * @var array
+     */
+    private $bindings;
 
-	/**
-	 * Raw constructor.
-	 * @param string $value
-	 * @param array $bindings
-	 */
-	public function __construct(string $value, array $bindings = [])
-	{
-		$this->value = $value;
-		$this->bindings = $bindings;
-	}
+    /**
+     * Raw constructor.
+     * @param string $value
+     * @param array $bindings
+     */
+    public function __construct(string $value, array $bindings = [])
+    {
+        $this->value = $value;
+        $this->bindings = $bindings;
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getValue(): string
-	{
-		return $this->value;
-	}
+    /**
+     * @return string
+     */
+    public function getValue(): string
+    {
+        return $this->value;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getBindings(): array
-	{
-		return $this->bindings;
-	}
+    /**
+     * @return array
+     */
+    public function getBindings(): array
+    {
+        return $this->bindings;
+    }
 }
