@@ -96,6 +96,9 @@ class TableBuilder extends BuildHandler
         $this->dropColumns[] = $name;
     }
 
+    /**
+     * @return mixed|void
+     */
     public function build()
     {
         $columnStatement = [];
@@ -123,7 +126,7 @@ class TableBuilder extends BuildHandler
         foreach ($this->addForeignKeys as $foreignKey) {
 
             [$fkColumn, $fkTable, $fkForeignColumn] = $foreignKey;
-            $constraintName = 'fk_'.$fkColumn.'_'.$fkTable;
+            $constraintName = 'fk_'.$this->getTable().'_'.$fkColumn.'_'.$fkTable.'_'.$fkForeignColumn;
 
             $columnStatement[] = ($this->isAlter ? 'ADD ' : '').'CONSTRAINT `'.$constraintName.'` FOREIGN KEY ('.$this->quote($fkColumn).') REFERENCES '.$this->quote($fkTable).' ('.$this->quote($fkForeignColumn).')';
         }

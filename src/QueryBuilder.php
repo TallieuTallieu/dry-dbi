@@ -474,6 +474,7 @@ class QueryBuilder extends BuildHandler
     private function buildCreate()
     {
         $tableBuilder = new TableBuilder();
+        $tableBuilder->table($this->getTable());
         call_user_func($this->create, $tableBuilder);
         $tableBuilder->build();
 
@@ -487,6 +488,7 @@ class QueryBuilder extends BuildHandler
     private function buildAlter()
     {
         $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table($this->getTable());
         call_user_func($this->alter, $tableBuilder);
         $tableBuilder->build();
 
