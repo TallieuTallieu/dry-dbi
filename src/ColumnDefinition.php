@@ -20,7 +20,7 @@ class ColumnDefinition
     private $newName;
 
     /**
-     * @var int $length
+     * @var mixed $length
      */
     private $length;
 
@@ -84,10 +84,10 @@ class ColumnDefinition
     }
 
     /**
-     * @param int $length
+     * @param mixed $length
      * @return $this
      */
-    public function length(int $length)
+    public function length($length)
     {
         $this->length = $length;
         return $this;
