@@ -39,6 +39,11 @@ class TableBuilder extends BuildHandler
     private $dropForeignKeys = [];
 
     /**
+     * @var array $dropForeignKeyIdentifiers
+     */
+    private $dropForeignKeyIdentifiers = [];
+
+    /**
      * @var array $addForeignKeys
      */
     private $addForeignKeys = [];
@@ -71,21 +76,35 @@ class TableBuilder extends BuildHandler
 
     /**
      * @param string $column
-     * @param string $table
+     * @param string $foreignTable
+     * @param string $foreignColumn
      */
-    public function dropForeignKey(string $column, string $table)
+    public function dropForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id')
     {
-        $this->dropForeignKeys[] = 'fk_'.$column.'_'.$table;
+        $foreignKey = new ForeignKeyDefinition($this->getTable(), $column, $foreignTable, $foreignColumn);
+        $this->dropForeignKeys[] = $foreignKey;
+    }
+
+    /**
+     * @param string $identifier
+     */
+    public function dropForeignKeyByIdentifier(string $identifier)
+    {
+        $this->dropForeignKeyIdentifiers[] = $identifier;
     }
 
     /**
      * @param string $column
-     * @param string $table
+     * @param string $foreignTable
      * @param string $foreignColumn
+     * @return ForeignKeyDefinition
      */
-    public function addForeignKey(string $column, string $table, string $foreignColumn = 'id')
+    public function addForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id')
     {
-        $this->addForeignKeys[] = [$column, $table, $foreignColumn,];
+        $foreignKey = new ForeignKeyDefinition($this->getTable(), $column, $foreignTable, $foreignColumn);
+        $this->addForeignKeys[] = $foreignKey;
+
+        return $foreignKey;
     }
 
     /**
@@ -114,8 +133,13 @@ class TableBuilder extends BuildHandler
             }
 
             foreach ($this->dropForeignKeys as $foreignKey) {
-                $columnStatement[] = 'DROP INDEX '.$this->quote($foreignKey);
-                $columnStatement[] = 'DROP FOREIGN KEY '.$this->quote($foreignKey);
+                $columnStatement[] = 'DROP INDEX '.$this->quote($foreignKey->getIdentifier());
+                $columnStatement[] = 'DROP FOREIGN KEY '.$this->quote($foreignKey->getIdentifier());
+            }
+
+            foreach ($this->dropForeignKeyIdentifiers as $identifier) {
+                $columnStatement[] = 'DROP INDEX '.$this->quote($identifier);
+                $columnStatement[] = 'DROP FOREIGN KEY '.$this->quote($identifier);
             }
 
             foreach ($this->dropColumns as $column) {
@@ -124,11 +148,7 @@ class TableBuilder extends BuildHandler
         }
 
         foreach ($this->addForeignKeys as $foreignKey) {
-
-            [$fkColumn, $fkTable, $fkForeignColumn] = $foreignKey;
-            $constraintName = 'fk_'.$this->getTable().'_'.$fkColumn.'_'.$fkTable.'_'.$fkForeignColumn;
-
-            $columnStatement[] = ($this->isAlter ? 'ADD ' : '').'CONSTRAINT `'.$constraintName.'` FOREIGN KEY ('.$this->quote($fkColumn).') REFERENCES '.$this->quote($fkTable).' ('.$this->quote($fkForeignColumn).')';
+            $columnStatement[] = ($this->isAlter ? 'ADD ' : '').'CONSTRAINT '.$this->quote($foreignKey->getIdentifier()).' FOREIGN KEY ('.$this->quote($foreignKey->getColumn()).') REFERENCES '.$this->quote($foreignKey->getForeignTable()).' ('.$this->quote($foreignKey->getForeignColumn()).')';
         }
 
         $this->addToQuery(implode(', ', $columnStatement));
