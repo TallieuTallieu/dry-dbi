@@ -52,6 +52,9 @@ class PageRepository extends BaseRepository
 {
 	protected $model = Page::class;
 	
+	/**
+	* Initial method for default actions
+	*/
 	public function init()
 	{
 		$this->addCriteria( new OrderBy( 'sort_index' ) );
@@ -63,6 +66,35 @@ class PageRepository extends BaseRepository
 		
 		return $this;
 	}
+	
+	/**
+	* Use querybuilder directly for custom actions
+	*/
+	public function types(array $types)
+	{
+		$this->useQueryBuilder(function(QueryBuilder $queryBuilder) use ($types) {
+
+			$queryBuilder->whereGroup(function(QueryBuilder $queryBuilder) use ($types) {
+				foreach ($types as $type) {
+					$queryBuilder->where('type', '=', $type->id, 'OR');
+				}
+			});
+		});
+
+		return $this;
+	}
+	
+	/**
+	* Use querybuilder for table joins (left, right, inner)
+	*/
+	public function expertise(Expertise $expertise)
+   	{
+		$this->useQueryBuilder(function(QueryBuilder $queryBuilder) {
+		    $queryBuilder->leftJoin('project_expertise')->on('project', '=', 'project.id');
+		});
+
+		return $this;
+	    }
 }
 ```
 
@@ -102,3 +134,4 @@ LessThanOrEquals($column, $value)	| Check if column is less than or equals speci
 LimitOffset($limit, $offet)		| Create a limit/offset on query
 NotEquals($column, $value)		| Check if column and value are not equals
 OrderBy($column, $order = 'ASC')	| Order by column with default ordering ASC
+Raw($value, $bindings)			| Build a custom query
