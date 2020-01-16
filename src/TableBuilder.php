@@ -44,6 +44,16 @@ class TableBuilder extends BuildHandler
     private $dropForeignKeyIdentifiers = [];
 
     /**
+     * @var array $addUniques
+     */
+    private $addUniques = [];
+
+    /***
+     * @var array $dropUniques
+     */
+    private $dropUniques = [];
+
+    /**
      * @var array $addForeignKeys
      */
     private $addForeignKeys = [];
@@ -108,6 +118,30 @@ class TableBuilder extends BuildHandler
     }
 
     /**
+     * @param string $column
+     * @return UniqueDefinition
+     */
+    public function addUnique(string $column)
+    {
+        $unique = new UniqueDefinition($column);
+        $this->addUniques[] = $unique;
+
+        return $unique;
+    }
+
+    /**
+     * @param string $column
+     * @return UniqueDefinition
+     */
+    public function dropUnique(string $column)
+    {
+        $unique = new UniqueDefinition($column);
+        $this->dropUniques[] = $unique;
+
+        return $unique;
+    }
+
+    /**
      * @param string $name
      */
     public function dropColumn(string $name)
@@ -142,6 +176,10 @@ class TableBuilder extends BuildHandler
                 $columnStatement[] = 'DROP FOREIGN KEY '.$this->quote($identifier);
             }
 
+            foreach ($this->dropUniques as $unique) {
+                $columnStatement[] = 'DROP INDEX '.$this->quote($unique->getIdentifier());
+            }
+
             foreach ($this->dropColumns as $column) {
                 $columnStatement[] = 'DROP COLUMN '.$this->quote($column);
             }
@@ -149,6 +187,10 @@ class TableBuilder extends BuildHandler
 
         foreach ($this->addForeignKeys as $foreignKey) {
             $columnStatement[] = ($this->isAlter ? 'ADD ' : '').'CONSTRAINT '.$this->quote($foreignKey->getIdentifier()).' FOREIGN KEY ('.$this->quote($foreignKey->getColumn()).') REFERENCES '.$this->quote($foreignKey->getForeignTable()).' ('.$this->quote($foreignKey->getForeignColumn()).')';
+        }
+
+        foreach ($this->addUniques as $unique) {
+            $columnStatement[] = ($this->isAlter ? 'ADD ' : '').'CONSTRAINT '.$this->quote($unique->getIdentifier()).' UNIQUE ('.$this->quote($unique->getColumn()).')';
         }
 
         $this->addToQuery(implode(', ', $columnStatement));
