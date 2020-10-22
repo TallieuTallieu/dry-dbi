@@ -289,6 +289,12 @@ class QueryBuilder extends BuildHandler
      */
     private function join(string $type, string $table): JoinBuilder
     {
+        foreach ($this->joins as $join) {
+            if ($join->getTable() === $table) {
+                return $join;
+            }
+        }
+
         $join = new JoinBuilder();
         $join->table($table);
         $join->setType($type);
