@@ -8,7 +8,7 @@ Improved DRY databases
 
 #### Installation
 ```ssh
-composer require dietervyncke/dry-dbi
+composer require tallieutallieu/dry-dbi
 ```
 
 #### Usage

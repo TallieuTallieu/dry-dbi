@@ -1,5 +1,5 @@
 {
-    "name": "dietervyncke/dry-dbi",
+    "name": "tallieutallieu/dry-dbi",
     "description": "Improved DRY databases",
     "type": "library",
     "authors": [
@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "reinvanoyen/oak": "^1.0.0"
+        "tallieutallieu/oak": "^1.0.0"
     },
     "autoload": {
         "psr-4": {
