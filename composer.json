@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "tallieutallieu/oak": "^1.0.0"
+        "tallieutallieu/oak": "^1.1.4"
     },
     "autoload": {
         "psr-4": {
