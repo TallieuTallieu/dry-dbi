@@ -25,6 +25,11 @@ class QueryBuilder extends BuildHandler
     private $select = [];
 
     /**
+     * @var array $raw
+     */
+    private $raw = [];
+
+    /**
      * @var array
      */
     private $joins = [];
@@ -88,6 +93,17 @@ class QueryBuilder extends BuildHandler
     public function drop(): QueryBuilder
     {
         $this->drop = true;
+        return $this;
+    }
+
+    /**
+     * @param null $table
+     * @return QueryBuilder
+     */
+    public function raw($raw): QueryBuilder
+    {
+        $this->raw[] = $raw;
+
         return $this;
     }
 
@@ -398,6 +414,22 @@ class QueryBuilder extends BuildHandler
     /**
      *
      */
+    private function buildRaw()
+    {
+        $rawStatement = [];
+
+        foreach ($this->raw as $raw) {
+            $rawStatement[] = $raw->getValue();
+
+            $this->addParameters($raw->getBindings());
+        }
+
+        $this->addToQuery(implode('; ', $rawStatement));
+    }
+
+    /**
+     *
+     */
     private function buildSelect()
     {
         $selectStatement = [];
@@ -550,6 +582,7 @@ class QueryBuilder extends BuildHandler
     {
         if ($this->isSelectQuery()) {
 
+            $this->buildRaw();
             $this->buildSelect();
             $this->buildJoins();
             $this->buildWhere();
