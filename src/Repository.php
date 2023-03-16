@@ -4,6 +4,7 @@ namespace Tnt\Dbi;
 
 use Tnt\Dbi\Contracts\CriteriaCollectionInterface;
 use Tnt\Dbi\Contracts\CriteriaInterface;
+use Tnt\Dbi\Exceptions\IllegalSelectException;
 
 abstract class Repository
 {
@@ -22,6 +23,12 @@ abstract class Repository
      * @var array
      */
     private $queryBuilderUses = [];
+
+    /**
+     * Define the columns you want to select from the database
+     * @var array
+     */
+    private $select = [];
 
     /**
      * Repository constructor.
@@ -92,6 +99,17 @@ abstract class Repository
         return $queryBuilder;
     }
 
+    final public function select($columns = [])
+    {
+        if (!is_string($columns) && !is_array($columns)) {
+            throw new IllegalSelectException();
+        }
+
+        $this->select = $columns;
+
+        return $this;
+    }
+
     /**
      * Get all results
      * @return mixed
@@ -99,7 +117,20 @@ abstract class Repository
     final public function get()
     {
         $queryBuilder = $this->createQueryBuilder();
-        $queryBuilder->selectAll();
+
+        if (is_string($this->select)) {
+            $queryBuilder->select($this->select);
+        }
+
+        if (is_array($this->select)) {
+            foreach ($this->select as $column) {
+                $queryBuilder->select($column);
+            }
+        }
+
+        if (!$this->select) {
+            $queryBuilder->selectAll();
+        }
 
         return $this->fetchAll($queryBuilder);
     }
