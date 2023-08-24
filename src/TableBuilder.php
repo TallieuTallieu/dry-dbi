@@ -180,8 +180,8 @@ class TableBuilder extends BuildHandler
             . 'CONSTRAINT ' . $this->quote($foreignKey->getIdentifier())
             . ' FOREIGN KEY (' . $this->quote($foreignKey->getColumn()) . ') '
             . 'REFERENCES ' . $this->quote($foreignKey->getForeignTable()) . ' (' . $this->quote($foreignKey->getForeignColumn()) . ')'
-            . empty($foreignKey->getOnDelete()) ? '' : ' ON DELETE ' . $foreignKey->getOnDelete()
-            . empty($foreignKey->getOnUpdate()) ? '' : ' ON UPDATE ' . $foreignKey->getOnUpdate();
+            . (empty($foreignKey->getOnDelete()) ? '' : ' ON DELETE ' . $foreignKey->getOnDelete())
+            . (empty($foreignKey->getOnUpdate()) ? '' : ' ON UPDATE ' . $foreignKey->getOnUpdate());
         }
 
         foreach ($this->addUniques as $unique) {
