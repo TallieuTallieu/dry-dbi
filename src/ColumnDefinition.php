@@ -35,6 +35,11 @@ class ColumnDefinition
     private $null;
 
     /**
+    * @var $defaultVal
+    */
+    private $defaultVal = false;
+
+    /**
      * @var bool $autoIncrement
      */
     private $autoIncrement = false;
@@ -121,6 +126,12 @@ class ColumnDefinition
         return $this;
     }
 
+    public function default($defaultVal)
+    {
+        $this->defaultVal = $defaultVal;
+        return $this;
+    }
+
     /**
      * @return string
      */
@@ -140,14 +151,14 @@ class ColumnDefinition
             $statement[] = $type;
         }
 
-        if ($this->isAlter) {
-            if ($this->null === true) {
-                $statement[] = 'NULL';
-            } else if($this->null === false) {
-                $statement[] = 'NOT NULL';
+        $statement[] = ($this->null ? 'NULL' : 'NOT NULL');
+
+        if ($this->defaultVal !== false) {
+            if (is_string($this->defaultVal)) {
+                $statement[] = "DEFAULT '" . addslashes($this->defaultVal) . "'";
+            } else {
+                $statement[] = "DEFAULT " . $this->defaultVal;
             }
-        } else {
-            $statement[] = ($this->null ? 'NULL' : 'NOT NULL');
         }
 
         if ($this->autoIncrement) {
