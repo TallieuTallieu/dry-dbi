@@ -156,7 +156,10 @@ class ColumnDefinition
         if ($this->defaultVal !== false) {
             if (is_string($this->defaultVal)) {
                 $statement[] = "DEFAULT '" . addslashes($this->defaultVal) . "'";
-            } else {
+            } else if (is_null($this->defaultVal)) {
+                $statement[] = "DEFAULT NULL";
+            }
+            else {
                 $statement[] = "DEFAULT " . $this->defaultVal;
             }
         }
