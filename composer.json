@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "tallieutallieu/oak": "^1.0.0"
+        "tallieutallieu/oak": "^1.0.0 | dev-php8.2"
     },
     "autoload": {
         "psr-4": {
