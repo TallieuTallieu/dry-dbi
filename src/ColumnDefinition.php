@@ -30,6 +30,11 @@ class ColumnDefinition
     private $type;
 
     /**
+     * @var string $generate
+     */
+    private $generateQuery;
+
+    /**
      * @var bool $null
      */
     private $null;
@@ -132,6 +137,12 @@ class ColumnDefinition
         return $this;
     }
 
+    public function generate($query)
+    {
+        $this->generateQuery = $query;
+        return $this;
+    }
+
     /**
      * @return string
      */
@@ -149,6 +160,13 @@ class ColumnDefinition
             }
 
             $statement[] = $type;
+        }
+
+        if ($this->generateQuery) {
+            $gerateStatement = 'GENERATED ALWAYS as (' . $this->generateQuery . ')';
+
+            $statement[] = $gerateStatement;
+            return implode(' ', $statement);
         }
 
         $statement[] = ($this->null ? 'NULL' : 'NOT NULL');
@@ -175,3 +193,4 @@ class ColumnDefinition
         return implode(' ', $statement);
     }
 }
+
