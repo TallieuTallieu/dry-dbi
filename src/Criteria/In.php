@@ -29,11 +29,21 @@ class In implements CriteriaInterface
         $this->value = $value;
     }
 
+    private function prepValues() {
+        return '(' . join(',',array_map(function ($value) {
+            if (is_string($value)) {
+
+                return "'$value'";
+            }
+            return $value;
+        }, $this->value)) . ')';
+    }
+
     /**
      * @param QueryBuilder $queryBuilder
      */
     public function apply(QueryBuilder $queryBuilder)
     {
-        $queryBuilder->where($this->column, 'IN', new Raw('('. join(',', $this->value) . ')'));
+        $queryBuilder->where($this->column, 'IN', new Raw($this->prepValues()));
     }
 }
