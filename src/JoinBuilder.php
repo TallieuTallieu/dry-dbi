@@ -40,9 +40,9 @@ class JoinBuilder extends BuildHandler
      * @param string $value
      * @return BuildHandler
      */
-    public function on(string $field, string $operator, string $value): BuildHandler
+    public function on(string $field, string $operator, string $value, bool $prefix = true): BuildHandler
     {
-        $this->on[] = [$field, $operator, $value,];
+        $this->on[] = [$field, $operator, $value, $prefix];
         return $this;
     }
 
@@ -73,7 +73,7 @@ class JoinBuilder extends BuildHandler
             $onStatements = [];
 
             foreach ($this->on as $on) {
-                $prefix = $on[3] ?? true;
+                $prefix = $on[3];
 
                 if ($prefix || strpos($on[0], '.') !== false) {
                     $on[0] = $this->withTablePrefix($on[0]);
