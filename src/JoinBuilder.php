@@ -73,7 +73,7 @@ class JoinBuilder extends BuildHandler
             $onStatements = [];
 
             foreach ($this->on as $on) {
-                $prefix = $on[3];
+                $prefix = $on[3] ?? false;
 
                 if ($prefix || strpos($on[0], '.') !== false) {
                     $on[0] = $this->withTablePrefix($on[0]);
