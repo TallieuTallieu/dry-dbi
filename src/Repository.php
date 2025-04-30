@@ -32,6 +32,14 @@ abstract class Repository
         $this->criteria = $criteria;
         $this->init();
     }
+    
+    /**
+     * Create a new repository
+     * @return static
+     */
+    static function create() {
+        return new static(new CriteriaCollection());
+    }
 
     /**
      * Called upon repository creation
