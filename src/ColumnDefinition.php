@@ -81,7 +81,7 @@ class ColumnDefinition
      * @param int|null $length
      * @return $this
      */
-    public function rename(string $name, string $type, int $length = null)
+    public function rename(string $name, string $type, ?int $length = null)
     {
         $this->newName = $name;
         $this->type = $type;
