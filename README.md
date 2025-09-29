@@ -5,9 +5,10 @@ Improved DRY databases
 
 * [Installation](#installation)
 * [Usage](#usage)
+* [Documentation](docs/index.md)
 
 #### Installation
-```ssh
+```bash
 composer require tallieutallieu/dry-dbi
 ```
 
@@ -46,6 +47,9 @@ Extend from BaseRepository for some default behaviour.
 namespace Repository;
 
 use Tnt\Dbi\BaseRepository;
+use Tnt\Dbi\Criteria\OrderBy;
+use Tnt\Dbi\Criteria\IsTrue;
+use Tnt\Dbi\QueryBuilder;
 use Model\Page;
 
 class PageRepository extends BaseRepository
@@ -57,12 +61,12 @@ class PageRepository extends BaseRepository
 	*/
 	public function init()
 	{
-		$this->addCriteria( new OrderBy( 'sort_index' ) );
+		$this->addCriteria(new OrderBy('sort_index'));
 	}
 	
 	public function visible()
 	{
-		$this->addCriteria( new IsTrue( 'is_visible' ) );
+		$this->addCriteria(new IsTrue('is_visible'));
 		
 		return $this;
 	}
@@ -122,16 +126,19 @@ class pages
 ##### Criteria
 Name					| Description
 --------------------------------------- | ---------------------------------------------------------
-Equals($column, $value)			| Check if column is equals to specific value
-GreateThan($column, $value)		| Check if column is greater than specific value
+Equals($column, $value)			| Check if column equals specific value
+GreaterThan($column, $value)		| Check if column is greater than specific value
 GreaterThanOrEqual($column, $value)	| Check if column is greater than or equals specific value
 GroupBy($column)			| Create a group by on a column
+In($column, $values)			| Check if column value is in array of values
 IsFalse($column)			| Check on falsy value
 IsNull($column)				| Check on NULL
 IsTrue($column)				| Check on truthy value
 LessThan($column, $value)		| Check if column is less than specific value
-LessThanOrEquals($column, $value)	| Check if column is less than or equals specific value
-LimitOffset($limit, $offet)		| Create a limit/offset on query
+LessThanOrEqual($column, $value)	| Check if column is less than or equals specific value
+LimitOffset($limit, $offset)		| Create a limit/offset on query
 NotEquals($column, $value)		| Check if column and value are not equals
+NotNull($column)			| Check on NOT NULL
+OrEquals($column, $value)		| Check if column equals value with OR connector
 OrderBy($column, $order = 'ASC')	| Order by column with default ordering ASC
 Raw($value, $bindings)			| Build a custom query
