@@ -50,6 +50,7 @@ $users = UserRepository::create()
 - **[TableBuilder](schema-builders.md#tablebuilder)** - CREATE and ALTER table operations
 - **[ColumnDefinition](schema-builders.md#columndefinition)** - Column types, constraints, and properties
 - **[JoinBuilder](schema-builders.md#joinbuilder)** - JOIN operations with conditions
+- **[Timestamp Management](schema-builders.md#timestamp-management)** - Automatic timestamp triggers and column management
 - Foreign keys and unique constraints
 
 ### [Raw SQL](raw-statements.md)
@@ -100,6 +101,9 @@ QueryBuilder::create()
         $table->addColumn('email', 'varchar')->length(255);
         $table->addForeignKey('role_id', 'roles');
         $table->addUnique('email');
+        
+        // Add automatic timestamp management
+        $table->timestamps();
     });
 ```
 
@@ -113,6 +117,20 @@ composer require tallieutallieu/dry-dbi
 
 - PHP 8.1+
 - tallieutallieu/oak framework
+
+## Testing
+
+The library includes a comprehensive test suite using [Pest PHP](https://pestphp.com/):
+
+```bash
+# Run all tests
+make test
+
+# Run tests with coverage
+make test-coverage
+```
+
+See [tests/README.md](../tests/README.md) for detailed testing information.
 
 ## Architecture Overview
 
@@ -137,4 +155,10 @@ src/
 ├── JoinBuilder.php     # JOIN operations
 ├── Raw.php            # Raw SQL statements
 └── ...                # Supporting classes
+
+tests/
+├── Feature/            # Feature tests
+├── Unit/              # Unit tests
+├── Pest.php           # Test configuration
+└── README.md          # Testing documentation
 ```

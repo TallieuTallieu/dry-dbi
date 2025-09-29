@@ -62,7 +62,7 @@ class ForeignKeyDefinition
      * @param string $identifierName
      * @return $this
      */
-    public function identifier(string $identifierName)
+    public function identifier(string $identifierName): self
     {
         $this->identifierName = $identifierName;
         return $this;
@@ -71,7 +71,7 @@ class ForeignKeyDefinition
     /**
      * @return string
      */
-    public function getIdentifier()
+    public function getIdentifier(): string
     {
         return ($this->identifierName ?: 'fk_'.$this->table.'_'.$this->column.'_'.$this->foreignTable.'_'.$this->foreignColumn);
     }
@@ -79,7 +79,7 @@ class ForeignKeyDefinition
     /**
      * @return string
      */
-    public function getForeignColumn()
+    public function getForeignColumn(): string
     {
         return $this->foreignColumn;
     }
@@ -87,7 +87,7 @@ class ForeignKeyDefinition
     /**
      * @return string
      */
-    public function getForeignTable()
+    public function getForeignTable(): string
     {
         return $this->foreignTable;
     }
@@ -95,7 +95,7 @@ class ForeignKeyDefinition
     /**
      * @return string
      */
-    public function getColumn()
+    public function getColumn(): string
     {
         return $this->column;
     }

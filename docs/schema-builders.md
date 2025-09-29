@@ -54,6 +54,43 @@ public function dropColumn(string $name): void
 
 Removes a column from the table (ALTER TABLE only).
 
+#### timestamps()
+
+```php
+public function timestamps(string $createdColumn = 'created_at', string $updatedColumn = 'updated_at'): void
+```
+
+Adds automatic timestamp management with MySQL triggers. Creates two TIMESTAMP columns and a trigger to automatically update the updated_at column on record changes.
+
+```php
+// Use default column names (created_at, updated_at)
+$table->timestamps();
+
+// Use custom column names
+$table->timestamps('created_on', 'modified_on');
+```
+
+**Note:** This creates:
+- A `created_at/created_on` column with `DEFAULT CURRENT_TIMESTAMP`
+- An `updated_at/modified_on` column with `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
+- A MySQL trigger to automatically update the updated column on UPDATE operations
+
+#### dropTimestampTrigger()
+
+```php
+public function dropTimestampTrigger(string $triggerName): void
+```
+
+Removes a specific timestamp trigger by name (ALTER TABLE only).
+
+#### dropTimestampTriggers()
+
+```php
+public function dropTimestampTriggers(): void
+```
+
+Removes auto-generated timestamp triggers for this table (ALTER TABLE only).
+
 ### Foreign Key Operations
 
 #### addForeignKey()
@@ -254,6 +291,37 @@ Represents a unique constraint.
 
 **Auto-generated identifier format:** `uq_{column}`
 
+## Timestamp Management
+
+The dry-dbi library provides automatic timestamp management through MySQL triggers, eliminating the need to manually update timestamp columns in your application code.
+
+### How It Works
+
+When you call `timestamps()` on a TableBuilder:
+
+1. **Column Creation**: Two TIMESTAMP columns are added to your table
+   - `created_at` (or custom name): Set to `CURRENT_TIMESTAMP` when record is created
+   - `updated_at` (or custom name): Set to `CURRENT_TIMESTAMP` and updated automatically on changes
+
+2. **Trigger Creation**: A MySQL trigger is created with the naming convention `{table_name}_updated_at_trigger`
+
+3. **Automatic Updates**: The trigger automatically updates the `updated_at` column whenever any field in the record is modified
+
+### Trigger Naming Convention
+
+Auto-generated triggers follow this pattern: `{table_name}_updated_at_trigger`
+
+For example:
+- Table `users` → Trigger `users_updated_at_trigger`
+- Table `blog_posts` → Trigger `blog_posts_updated_at_trigger`
+
+### Best Practices
+
+- Use `timestamps()` for tables that need audit trails
+- Use custom column names when integrating with existing schemas
+- Always call `dropTimestampTriggers()` before dropping timestamp columns
+- When altering timestamp columns, recreate triggers to ensure consistency
+
 ## Usage Examples
 
 ### Creating a Table
@@ -264,9 +332,25 @@ $qb->table('users')
        $table->addColumn('id', 'int')->primaryKey();
        $table->addColumn('name', 'varchar')->length(255)->notNull();
        $table->addColumn('email', 'varchar')->length(255)->notNull();
-       $table->addColumn('created_at', 'timestamp')->default('CURRENT_TIMESTAMP');
+       
+       // Add automatic timestamp management
+       $table->timestamps();
        
        $table->addUnique('email');
+   });
+```
+
+### Creating a Table with Custom Timestamp Columns
+
+```php
+$qb->table('posts')
+   ->create(function(TableBuilder $table) {
+       $table->addColumn('id', 'int')->primaryKey();
+       $table->addColumn('title', 'varchar')->length(255)->notNull();
+       $table->addColumn('content', 'text');
+       
+       // Use custom timestamp column names
+       $table->timestamps('created_on', 'modified_on');
    });
 ```
 
@@ -279,8 +363,30 @@ $qb->table('users')
        $table->changeColumn('name')->length(300);
        $table->dropColumn('old_field');
        
+       // Add timestamp functionality to existing table
+       $table->timestamps();
+       
        $table->addForeignKey('role_id', 'roles', 'id', 'SET NULL');
        $table->dropForeignKeyByIdentifier('old_fk_constraint');
+   });
+```
+
+### Managing Timestamp Triggers
+
+```php
+// Remove timestamp functionality from a table
+$qb->table('users')
+   ->alter(function(TableBuilder $table) {
+       $table->dropColumn('created_at');
+       $table->dropColumn('updated_at');
+       $table->dropTimestampTriggers();
+   });
+
+// Update timestamp trigger (recreate with new column names)
+$qb->table('posts')
+   ->alter(function(TableBuilder $table) {
+       $table->dropTimestampTriggers();
+       $table->timestamps('date_created', 'date_modified');
    });
 ```
 

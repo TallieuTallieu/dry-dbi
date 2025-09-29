@@ -21,7 +21,7 @@ class UniqueDefinition
     /**
      * @return string
      */
-    public function getIdentifier()
+    public function getIdentifier(): string
     {
         return 'uq_'.$this->column;
     }
@@ -29,7 +29,7 @@ class UniqueDefinition
     /**
      * @return string
      */
-    public function getColumn()
+    public function getColumn(): string
     {
         return $this->column;
     }
