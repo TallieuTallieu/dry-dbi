@@ -46,14 +46,27 @@ jobs:
           # Get merged branch name from commit message
           COMMIT_MESSAGE=$(git log -1 --pretty=%B)
           MERGED_BRANCH=""
-
+          
+          echo "Commit message: $COMMIT_MESSAGE"
+          
           # Extract branch name from merge commit message
-          if [[ $COMMIT_MESSAGE =~ Merge\ pull\ request\ #[0-9]+\ from\ [^/]+/(.+) ]]; then
+          # Handle different merge commit formats
+          if [[ $COMMIT_MESSAGE =~ Merge\ pull\ request\ #[0-9]+\ from\ [^/]+/([a-zA-Z0-9/_.-]+) ]]; then
             MERGED_BRANCH="${BASH_REMATCH[1]}"
-            echo "Detected merged branch: $MERGED_BRANCH"
+            echo "Detected merged branch: '$MERGED_BRANCH'"
+          elif [[ $COMMIT_MESSAGE =~ ^Merge\ branch\ \'([a-zA-Z0-9/_.-]+)\'\ into ]]; then
+            MERGED_BRANCH="${BASH_REMATCH[1]}"
+            echo "Detected merged branch (direct merge): '$MERGED_BRANCH'"
           else
-            echo "Not a merge commit, using default patch bump"
-            MERGED_BRANCH="patch/default"
+            # Try to extract from first line of commit message if it contains branch-like patterns
+            FIRST_LINE=$(echo "$COMMIT_MESSAGE" | head -1)
+            if [[ $FIRST_LINE =~ (feature|bug|fix|hotfix|patch|bugfix|breaking|major|break|bc-break|breaking-change|enhancement|improve|add|update|chore|docs|style|refactor|test|release)/[a-zA-Z0-9/_.-]+ ]]; then
+              MERGED_BRANCH="${BASH_REMATCH[0]}"
+              echo "Detected branch pattern from commit: '$MERGED_BRANCH'"
+            else
+              echo "No branch pattern found, using default patch bump"
+              MERGED_BRANCH="patch/default"
+            fi
           fi
 
           # Auto-detect bump type from merged branch name
@@ -130,11 +143,15 @@ jobs:
           fi
 
           echo "📦 Version bump: $CURRENT_VERSION → $NEW_VERSION ($BUMP_TYPE)"
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "merged_branch=$MERGED_BRANCH" >> $GITHUB_OUTPUT
-          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Set outputs with proper escaping
+          {
+            echo "version=$NEW_VERSION"
+            echo "tag=v$NEW_VERSION"
+            echo "merged_branch=$MERGED_BRANCH"
+            echo "bump_type=$BUMP_TYPE"
+            echo "current_version=$CURRENT_VERSION"
+          } >> $GITHUB_OUTPUT
 
       - name: Check if tag already exists
         id: check_tag
