@@ -3,3 +3,6 @@
 .wakatime-project
 /vendor/
 .php-cs-fixer.cache
+
+# Development notes and todos
+TODO.md
