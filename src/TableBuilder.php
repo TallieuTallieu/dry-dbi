@@ -61,8 +61,13 @@ class TableBuilder extends BuildHandler
      * @param string $name
      * @param string $type
      * @return ColumnDefinition
+     * @throws \InvalidArgumentException
      */
-    public function addColumn(string $name, string $type) {
+    public function addColumn(string $name, string $type): ColumnDefinition {
+        if (empty($name) || empty($type)) {
+            throw new \InvalidArgumentException('Column name and type cannot be empty');
+        }
+        
         $column = new ColumnDefinition($name);
         $column->type($type);
         $this->addColumns[] = $column;
@@ -73,8 +78,13 @@ class TableBuilder extends BuildHandler
     /**
      * @param string $name
      * @return ColumnDefinition
+     * @throws \InvalidArgumentException
      */
-    public function changeColumn(string $name) {
+    public function changeColumn(string $name): ColumnDefinition {
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Column name cannot be empty');
+        }
+        
         $column = new ColumnDefinition($name, true);
         $this->changeColumns[] = $column;
 
@@ -85,16 +95,20 @@ class TableBuilder extends BuildHandler
      * @param string $column
      * @param string $foreignTable
      * @param string $foreignColumn
+     * @param string $onDelete
+     * @param string $onUpdate
+     * @return void
      */
-    public function dropForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id', string $onDelete = '', string $onUpdate = '') {
+    public function dropForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id', string $onDelete = '', string $onUpdate = ''): void {
         $foreignKey = new ForeignKeyDefinition($this->getTable(), $column, $foreignTable, $foreignColumn, $onDelete, $onUpdate);
         $this->dropForeignKeys[] = $foreignKey;
     }
 
     /**
      * @param string $identifier
+     * @return void
      */
-    public function dropForeignKeyByIdentifier(string $identifier) {
+    public function dropForeignKeyByIdentifier(string $identifier): void {
         $this->dropForeignKeyIdentifiers[] = $identifier;
     }
 
@@ -102,9 +116,16 @@ class TableBuilder extends BuildHandler
      * @param string $column
      * @param string $foreignTable
      * @param string $foreignColumn
+     * @param string $onDelete
+     * @param string $onUpdate
      * @return ForeignKeyDefinition
+     * @throws \InvalidArgumentException
      */
-    public function addForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id', string $onDelete = '', string $onUpdate = '') {
+    public function addForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id', string $onDelete = '', string $onUpdate = ''): ForeignKeyDefinition {
+        if (empty($column) || empty($foreignTable) || empty($foreignColumn)) {
+            throw new \InvalidArgumentException('Column, foreign table, and foreign column cannot be empty');
+        }
+        
         $foreignKey = new ForeignKeyDefinition($this->getTable(), $column, $foreignTable, $foreignColumn, $onDelete, $onUpdate);
         $this->addForeignKeys[] = $foreignKey;
 
@@ -115,7 +136,7 @@ class TableBuilder extends BuildHandler
      * @param string $column
      * @return UniqueDefinition
      */
-    public function addUnique(string $column) {
+    public function addUnique(string $column): UniqueDefinition {
         $unique = new UniqueDefinition($column);
         $this->addUniques[] = $unique;
 
@@ -126,7 +147,7 @@ class TableBuilder extends BuildHandler
      * @param string $column
      * @return UniqueDefinition
      */
-    public function dropUnique(string $column) {
+    public function dropUnique(string $column): UniqueDefinition {
         $unique = new UniqueDefinition($column);
         $this->dropUniques[] = $unique;
 
@@ -135,15 +156,16 @@ class TableBuilder extends BuildHandler
 
     /**
      * @param string $name
+     * @return void
      */
-    public function dropColumn(string $name) {
+    public function dropColumn(string $name): void {
         $this->dropColumns[] = $name;
     }
 
     /**
-     * @return mixed|void
+     * @return void
      */
-    public function build() {
+    public function build(): void {
         $columnStatement = [];
 
         foreach ($this->addColumns as $column) {
