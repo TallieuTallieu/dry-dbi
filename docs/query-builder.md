@@ -181,6 +181,9 @@ $qb->table('users')
        $table->addColumn('id', 'int')->primaryKey();
        $table->addColumn('name', 'varchar')->length(255);
        $table->addColumn('email', 'varchar')->length(255);
+       
+       // Add automatic timestamp management
+       $table->timestamps();
    });
 ```
 
@@ -197,6 +200,9 @@ $qb->table('users')
    ->alter(function(TableBuilder $table) {
        $table->addColumn('phone', 'varchar')->length(20);
        $table->dropColumn('old_field');
+       
+       // Add timestamp functionality to existing table
+       $table->timestamps();
    });
 ```
 

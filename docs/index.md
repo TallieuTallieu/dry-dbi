@@ -50,6 +50,7 @@ $users = UserRepository::create()
 - **[TableBuilder](schema-builders.md#tablebuilder)** - CREATE and ALTER table operations
 - **[ColumnDefinition](schema-builders.md#columndefinition)** - Column types, constraints, and properties
 - **[JoinBuilder](schema-builders.md#joinbuilder)** - JOIN operations with conditions
+- **[Timestamp Management](schema-builders.md#timestamp-management)** - Automatic timestamp triggers and column management
 - Foreign keys and unique constraints
 
 ### [Raw SQL](raw-statements.md)
@@ -100,6 +101,9 @@ QueryBuilder::create()
         $table->addColumn('email', 'varchar')->length(255);
         $table->addForeignKey('role_id', 'roles');
         $table->addUnique('email');
+        
+        // Add automatic timestamp management
+        $table->timestamps();
     });
 ```
 
