@@ -5,6 +5,7 @@ Improved DRY databases
 
 * [Installation](#installation)
 * [Usage](#usage)
+* [Testing](#testing)
 * [Documentation](docs/index.md)
 
 #### Installation
@@ -122,6 +123,23 @@ class pages
 }
 
 ```
+
+#### Testing
+
+Run the test suite using [Pest PHP](https://pestphp.com/):
+
+```bash
+# Run all tests
+make test
+
+# Run tests with verbose output  
+make test-verbose
+
+# Run tests with coverage
+make test-coverage
+```
+
+This will execute all tests in the `tests/` directory through Docker. For more information about testing, see [tests/README.md](tests/README.md).
 
 ##### Criteria
 Name					| Description
