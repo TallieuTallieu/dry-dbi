@@ -3,7 +3,7 @@ name: Automated Release and Tagging
 on:
   # Trigger only when pull requests to master are merged
   push:
-    branches: 
+    branches:
       - master
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,120 +31,108 @@ jobs:
 
       - name: Determine version bump and calculate new version
         id: get_version
-        env:
-          BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          echo "Current branch: $BRANCH_NAME"
-          
-          # Get current version from composer.json
-          if [ -f "composer.json" ]; then
-            CURRENT_VERSION=$(php -r "
-              \$composer = json_decode(file_get_contents('composer.json'), true);
-              echo isset(\$composer['version']) ? \$composer['version'] : '';
-            ")
-            if [ -z "$CURRENT_VERSION" ]; then
-              echo "Error: No version found in composer.json"
-              exit 1
-            fi
+          # Get latest tag to determine current version
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            CURRENT_VERSION="3.0.0"
+            echo "No previous tags found, starting from $CURRENT_VERSION"
           else
-            echo "Error: composer.json not found"
+            CURRENT_VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
+            echo "Latest tag: $LATEST_TAG"
+            echo "Current version: $CURRENT_VERSION"
+          fi
+
+          # Get merged branch name from commit message
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          MERGED_BRANCH=""
+
+          # Extract branch name from merge commit message
+          if [[ $COMMIT_MESSAGE =~ Merge\ pull\ request\ #[0-9]+\ from\ [^/]+/(.+) ]]; then
+            MERGED_BRANCH="${BASH_REMATCH[1]}"
+            echo "Detected merged branch: $MERGED_BRANCH"
+          else
+            echo "Not a merge commit, using default patch bump"
+            MERGED_BRANCH="patch/default"
+          fi
+
+          # Auto-detect bump type from merged branch name
+          BUMP_TYPE=""
+
+          # PATCH: Bug fixes and patches
+          if [[ $MERGED_BRANCH =~ ^(bug|fix|hotfix|patch|bugfix)/ ]]; then
+            BUMP_TYPE="patch"
+            echo "🐛 Detected PATCH bump from branch prefix: ${BASH_REMATCH[1]}"
+
+          # MINOR: Features and enhancements
+          elif [[ $MERGED_BRANCH =~ ^(feature|feat|enhancement|improve|add|update)/ ]]; then
+            BUMP_TYPE="minor"
+            echo "✨ Detected MINOR bump from branch prefix: ${BASH_REMATCH[1]}"
+
+          # MAJOR: Breaking changes
+          elif [[ $MERGED_BRANCH =~ ^(breaking|major|break|bc-break|breaking-change)/ ]]; then
+            BUMP_TYPE="major"
+            echo "💥 Detected MAJOR bump from branch prefix: ${BASH_REMATCH[1]}"
+
+          # PATCH: Chores and maintenance (default to patch)
+          elif [[ $MERGED_BRANCH =~ ^(chore|docs|style|refactor|test)/ ]]; then
+            BUMP_TYPE="patch"
+            echo "🔧 Detected PATCH bump from maintenance branch: ${BASH_REMATCH[1]}"
+
+          # MINOR: Release branches (default to minor)
+          elif [[ $MERGED_BRANCH =~ ^release/ ]]; then
+            BUMP_TYPE="minor"
+            echo "🚀 Detected MINOR bump from release branch"
+
+          # Try to infer from Shortcut branch pattern: feature/sc-XXXX--description
+          elif [[ $MERGED_BRANCH =~ ^feature/sc-[0-9]+-- ]]; then
+            BUMP_TYPE="minor"
+            echo "🎫 Detected MINOR bump from Shortcut feature branch"
+
+          # Default to patch for unknown patterns
+          else
+            BUMP_TYPE="patch"
+            echo "❓ Unknown branch pattern, defaulting to PATCH bump"
+          fi
+
+          # Parse current version and calculate new version
+          if [[ $CURRENT_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            MINOR=${BASH_REMATCH[2]}
+            PATCH=${BASH_REMATCH[3]}
+
+            echo "Parsed version: $MAJOR.$MINOR.$PATCH"
+
+            # Apply version bump
+            case $BUMP_TYPE in
+              "major")
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              "minor")
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              "patch")
+                PATCH=$((PATCH + 1))
+                ;;
+              *)
+                echo "Error: Invalid bump type '$BUMP_TYPE'"
+                exit 1
+                ;;
+            esac
+
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          else
+            echo "Error: Invalid current version format '$CURRENT_VERSION'"
             exit 1
           fi
-          
-          echo "Current version: $CURRENT_VERSION"
-          
-          # Auto-detect bump type from branch name
-            BUMP_TYPE=""
-            
-            # PATCH: Bug fixes and patches
-            if [[ $BRANCH_NAME =~ ^(bug|fix|hotfix|patch|bugfix)/ ]]; then
-              BUMP_TYPE="patch"
-              echo "🐛 Detected PATCH bump from branch prefix: ${BASH_REMATCH[1]}"
-            
-            # MINOR: Features and enhancements  
-            elif [[ $BRANCH_NAME =~ ^(feature|feat|enhancement|improve|add|update)/ ]]; then
-              BUMP_TYPE="minor"
-              echo "✨ Detected MINOR bump from branch prefix: ${BASH_REMATCH[1]}"
-            
-            # MAJOR: Breaking changes
-            elif [[ $BRANCH_NAME =~ ^(breaking|major|break|bc-break|breaking-change)/ ]]; then
-              BUMP_TYPE="major"
-              echo "💥 Detected MAJOR bump from branch prefix: ${BASH_REMATCH[1]}"
-            
-            # PATCH: Chores and maintenance (default to patch)
-            elif [[ $BRANCH_NAME =~ ^(chore|docs|style|refactor|test)/ ]]; then
-              BUMP_TYPE="patch"
-              echo "🔧 Detected PATCH bump from maintenance branch: ${BASH_REMATCH[1]}"
-            
-            # MINOR: Release branches (default to minor)
-            elif [[ $BRANCH_NAME =~ ^release/ ]]; then
-              BUMP_TYPE="minor"
-              echo "🚀 Detected MINOR bump from release branch"
-            
-            # PATCH: Main branch (default to patch)
-            elif [[ $BRANCH_NAME == "main" ]]; then
-              BUMP_TYPE="patch"
-              echo "🏠 Detected PATCH bump from main branch"
-            
-            # Try to infer from Shortcut branch pattern: feature/sc-XXXX--description
-            elif [[ $BRANCH_NAME =~ ^feature/sc-[0-9]+-- ]]; then
-              BUMP_TYPE="minor"
-              echo "🎫 Detected MINOR bump from Shortcut feature branch"
-            
-            # Default to patch for unknown patterns
-            else
-              BUMP_TYPE="patch"
-              echo "❓ Unknown branch pattern, defaulting to PATCH bump"
-            fi
-          
-          # Calculate new version if not manually provided
-          if [ -z "$VERSION" ]; then
-            # Parse current version
-            if [[ $CURRENT_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-              MAJOR=${BASH_REMATCH[1]}
-              MINOR=${BASH_REMATCH[2]}
-              PATCH=${BASH_REMATCH[3]}
-              
-              echo "Parsed version: $MAJOR.$MINOR.$PATCH"
-              
-              # Apply version bump
-              case $BUMP_TYPE in
-                "major")
-                  MAJOR=$((MAJOR + 1))
-                  MINOR=0
-                  PATCH=0
-                  ;;
-                "minor")
-                  MINOR=$((MINOR + 1))
-                  PATCH=0
-                  ;;
-                "patch")
-                  PATCH=$((PATCH + 1))
-                  ;;
-                *)
-                  echo "Error: Invalid bump type '$BUMP_TYPE'"
-                  exit 1
-                  ;;
-              esac
-              
-              VERSION="$MAJOR.$MINOR.$PATCH"
-            else
-              echo "Error: Invalid current version format '$CURRENT_VERSION'"
-              exit 1
-            fi
-          fi
-          
-          # Validate semantic versioning format
-          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version '$VERSION' does not follow semantic versioning format"
-            echo "Expected format: X.Y.Z"
-            exit 1
-          fi
-          
-          echo "📦 Version bump: $CURRENT_VERSION → $VERSION ($BUMP_TYPE)"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          echo "📦 Version bump: $CURRENT_VERSION → $NEW_VERSION ($BUMP_TYPE)"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "merged_branch=$MERGED_BRANCH" >> $GITHUB_OUTPUT
           echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
@@ -177,14 +165,14 @@ jobs:
         run: |
           TAG="v${{ steps.get_version.outputs.version }}"
           LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
-          
+
           echo "# Release $TAG" > CHANGELOG.md
           echo "" >> CHANGELOG.md
-          
+
           if [ -n "$LATEST_TAG" ]; then
             echo "## Changes since $LATEST_TAG" >> CHANGELOG.md
             echo "" >> CHANGELOG.md
-            
+
             # Get commits since last tag
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD >> CHANGELOG.md
           else
@@ -192,48 +180,21 @@ jobs:
             echo "" >> CHANGELOG.md
             echo "This is the first tagged release of dry-dbi." >> CHANGELOG.md
           fi
-          
+
           echo "" >> CHANGELOG.md
           echo "## Installation" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo '```bash' >> CHANGELOG.md
           echo "composer require tallieutallieu/dry-dbi:^${{ steps.get_version.outputs.version }}" >> CHANGELOG.md
           echo '```' >> CHANGELOG.md
-          
+
           # Read changelog content for release notes
           CHANGELOG_CONTENT=$(cat CHANGELOG.md)
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Update composer.json version
-        env:
-          VERSION: ${{ steps.get_version.outputs.version }}
-          BRANCH: ${{ steps.get_version.outputs.branch }}
-        run: |
-          # Always update composer.json to match the version being released
-          echo "Updating composer.json version to $VERSION"
-          php -r "
-            \$version = getenv('VERSION');
-            \$composer = json_decode(file_get_contents('composer.json'), true);
-            \$composer['version'] = \$version;
-            file_put_contents('composer.json', json_encode(\$composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
-          "
-          
-          # Commit the version update if there are changes
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          if ! git diff --quiet composer.json; then
-            git add composer.json
-            git commit -m "chore: update composer.json version to $VERSION"
-            
-            # Push to current branch (not necessarily main)
-            git push origin HEAD
-            echo "Updated composer.json version to $VERSION"
-          else
-            echo "composer.json already has version $VERSION, no update needed"
-          fi
+
 
       - name: Create and push tag
         if: steps.check_tag.outputs.exists == 'false'
@@ -275,7 +236,7 @@ jobs:
 
       - name: Summary
         env:
-          BRANCH: ${{ steps.get_version.outputs.branch }}
+          MERGED_BRANCH: ${{ steps.get_version.outputs.merged_branch }}
           BUMP_TYPE: ${{ steps.get_version.outputs.bump_type }}
           CURRENT_VERSION: ${{ steps.get_version.outputs.current_version }}
           NEW_VERSION: ${{ steps.get_version.outputs.version }}
@@ -283,7 +244,7 @@ jobs:
           TRIGGER: ${{ github.event_name }}
         run: |
           echo "## 🚀 Automated Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: \`$BRANCH\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Merged Branch**: \`$MERGED_BRANCH\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Bump Type**: $BUMP_TYPE ($CURRENT_VERSION → $NEW_VERSION)" >> $GITHUB_STEP_SUMMARY
           echo "- **New Version**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- **Tag**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
@@ -301,4 +262,4 @@ jobs:
           echo "| \`bug/\`, \`fix/\`, \`hotfix/\`, \`patch/\` | **PATCH** | 3.1.0 → 3.1.1 |" >> $GITHUB_STEP_SUMMARY
           echo "| \`breaking/\`, \`major/\`, \`bc-break/\` | **MAJOR** | 3.1.0 → 4.0.0 |" >> $GITHUB_STEP_SUMMARY
           echo "| \`chore/\`, \`docs/\`, \`refactor/\` | **PATCH** | 3.1.0 → 3.1.1 |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`main\`, \`release/\` | **PATCH/MINOR** | Auto-detected |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Shortcut**: \`feature/sc-XXXX--*\` | **MINOR** | Auto-detected |" >> $GITHUB_STEP_SUMMARY
