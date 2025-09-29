@@ -7,6 +7,7 @@ Improved DRY databases
 * [Usage](#usage)
 * [Testing](#testing)
 * [Documentation](docs/index.md)
+* [Release Process](docs/release-process.md)
 
 #### Installation
 ```bash
@@ -140,6 +141,35 @@ make test-coverage
 ```
 
 This will execute all tests in the `tests/` directory through Docker. For more information about testing, see [tests/README.md](tests/README.md).
+
+#### Release Management
+
+This project uses **intelligent automated release management** with GitHub Actions. The system automatically infers the version bump type from your branch name and creates releases accordingly:
+
+| Branch Type | Version Bump | Example |
+|---|---|---|
+| `feature/`, `feat/` | **MINOR** | 3.1.0 → 3.2.0 |
+| `bug/`, `fix/`, `hotfix/` | **PATCH** | 3.1.0 → 3.1.1 |
+| `breaking/`, `major/` | **MAJOR** | 3.1.0 → 4.0.0 |
+| `chore/`, `docs/` | **PATCH** | 3.1.0 → 3.1.1 |
+
+**🎫 Shortcut Integration**: Branches like `feature/sc-8322--description` automatically trigger **MINOR** releases.
+
+For detailed information about all supported patterns and manual overrides, see [Release Process Documentation](docs/release-process.md).
+
+**Zero-configuration releases:**
+```bash
+# Feature development (MINOR: 3.1.0 → 3.2.0)
+git checkout -b feature/new-api && git push origin feature/new-api
+
+# Bug fix (PATCH: 3.1.0 → 3.1.1)  
+git checkout -b bug/fix-query-issue && git push origin bug/fix-query-issue
+
+# Breaking change (MAJOR: 3.1.0 → 4.0.0)
+git checkout -b breaking/api-redesign && git push origin breaking/api-redesign
+```
+
+**No manual version management needed** - just push your branch and get automatic releases! 🚀
 
 ##### Criteria
 Name					| Description

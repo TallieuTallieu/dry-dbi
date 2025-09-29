@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "159c55e11d95606c054731c0224baaa9",
+    "content-hash": "656937348a93bae88e6bddc7aa339b33",
     "packages": [
         {
             "name": "dragonmantank/cron-expression",
@@ -820,16 +820,16 @@
         },
         {
             "name": "tallieutallieu/oak",
-            "version": "3.0.7",
+            "version": "3.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/TallieuTallieu/oak.git",
-                "reference": "7882e88064e77052b7fe6c5c52e2329c2b30499c"
+                "reference": "c12abc2b01c3c3604ab683cde5c981b5d2f91a24"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/TallieuTallieu/oak/zipball/7882e88064e77052b7fe6c5c52e2329c2b30499c",
-                "reference": "7882e88064e77052b7fe6c5c52e2329c2b30499c",
+                "url": "https://api.github.com/repos/TallieuTallieu/oak/zipball/c12abc2b01c3c3604ab683cde5c981b5d2f91a24",
+                "reference": "c12abc2b01c3c3604ab683cde5c981b5d2f91a24",
                 "shasum": ""
             },
             "require": {
@@ -857,9 +857,9 @@
                 "library"
             ],
             "support": {
-                "source": "https://github.com/TallieuTallieu/oak/tree/3.0.7"
+                "source": "https://github.com/TallieuTallieu/oak/tree/3.0.8"
             },
-            "time": "2025-09-25T15:05:50+00:00"
+            "time": "2025-09-29T13:58:32+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
@@ -4696,7 +4696,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.1"
+        "php": "^8.2"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

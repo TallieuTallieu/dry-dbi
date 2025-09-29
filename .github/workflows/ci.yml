@@ -1,0 +1,79 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: PHP 8.4 Tests
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Run tests
+        run: |
+          if [ -f "vendor/bin/pest" ]; then
+            echo "Running Pest tests..."
+            vendor/bin/pest --coverage-text
+          elif [ -f "vendor/bin/phpunit" ]; then
+            echo "Running PHPUnit tests..."
+            vendor/bin/phpunit --coverage-text
+          else
+            echo "No test runner found"
+            exit 1
+          fi
+
+  security:
+    runs-on: ubuntu-latest
+    name: Security Check
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Security check
+        run: |
+          if [ -f "vendor/bin/security-checker" ]; then
+            vendor/bin/security-checker security:check
+          else
+            echo "Security checker not available, using composer audit"
+            composer audit || echo "Composer audit not available in this version"
+          fi

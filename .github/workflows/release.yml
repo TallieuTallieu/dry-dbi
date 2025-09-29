@@ -1,0 +1,265 @@
+name: Automated Release and Tagging
+
+on:
+  # Trigger only when pull requests to master are merged
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for changelog generation
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Determine version bump and calculate new version
+        id: get_version
+        run: |
+          # Get latest tag to determine current version
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            CURRENT_VERSION="3.0.0"
+            echo "No previous tags found, starting from $CURRENT_VERSION"
+          else
+            CURRENT_VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
+            echo "Latest tag: $LATEST_TAG"
+            echo "Current version: $CURRENT_VERSION"
+          fi
+
+          # Get merged branch name from commit message
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          MERGED_BRANCH=""
+
+          # Extract branch name from merge commit message
+          if [[ $COMMIT_MESSAGE =~ Merge\ pull\ request\ #[0-9]+\ from\ [^/]+/(.+) ]]; then
+            MERGED_BRANCH="${BASH_REMATCH[1]}"
+            echo "Detected merged branch: $MERGED_BRANCH"
+          else
+            echo "Not a merge commit, using default patch bump"
+            MERGED_BRANCH="patch/default"
+          fi
+
+          # Auto-detect bump type from merged branch name
+          BUMP_TYPE=""
+
+          # PATCH: Bug fixes and patches
+          if [[ $MERGED_BRANCH =~ ^(bug|fix|hotfix|patch|bugfix)/ ]]; then
+            BUMP_TYPE="patch"
+            echo "🐛 Detected PATCH bump from branch prefix: ${BASH_REMATCH[1]}"
+
+          # MINOR: Features and enhancements
+          elif [[ $MERGED_BRANCH =~ ^(feature|feat|enhancement|improve|add|update)/ ]]; then
+            BUMP_TYPE="minor"
+            echo "✨ Detected MINOR bump from branch prefix: ${BASH_REMATCH[1]}"
+
+          # MAJOR: Breaking changes
+          elif [[ $MERGED_BRANCH =~ ^(breaking|major|break|bc-break|breaking-change)/ ]]; then
+            BUMP_TYPE="major"
+            echo "💥 Detected MAJOR bump from branch prefix: ${BASH_REMATCH[1]}"
+
+          # PATCH: Chores and maintenance (default to patch)
+          elif [[ $MERGED_BRANCH =~ ^(chore|docs|style|refactor|test)/ ]]; then
+            BUMP_TYPE="patch"
+            echo "🔧 Detected PATCH bump from maintenance branch: ${BASH_REMATCH[1]}"
+
+          # MINOR: Release branches (default to minor)
+          elif [[ $MERGED_BRANCH =~ ^release/ ]]; then
+            BUMP_TYPE="minor"
+            echo "🚀 Detected MINOR bump from release branch"
+
+          # Try to infer from Shortcut branch pattern: feature/sc-XXXX--description
+          elif [[ $MERGED_BRANCH =~ ^feature/sc-[0-9]+-- ]]; then
+            BUMP_TYPE="minor"
+            echo "🎫 Detected MINOR bump from Shortcut feature branch"
+
+          # Default to patch for unknown patterns
+          else
+            BUMP_TYPE="patch"
+            echo "❓ Unknown branch pattern, defaulting to PATCH bump"
+          fi
+
+          # Parse current version and calculate new version
+          if [[ $CURRENT_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            MINOR=${BASH_REMATCH[2]}
+            PATCH=${BASH_REMATCH[3]}
+
+            echo "Parsed version: $MAJOR.$MINOR.$PATCH"
+
+            # Apply version bump
+            case $BUMP_TYPE in
+              "major")
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              "minor")
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              "patch")
+                PATCH=$((PATCH + 1))
+                ;;
+              *)
+                echo "Error: Invalid bump type '$BUMP_TYPE'"
+                exit 1
+                ;;
+            esac
+
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          else
+            echo "Error: Invalid current version format '$CURRENT_VERSION'"
+            exit 1
+          fi
+
+          echo "📦 Version bump: $CURRENT_VERSION → $NEW_VERSION ($BUMP_TYPE)"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "merged_branch=$MERGED_BRANCH" >> $GITHUB_OUTPUT
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          if git tag -l | grep -q "^$TAG$"; then
+            echo "Tag $TAG already exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest tag for changelog
+        id: latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No previous tags found"
+            echo "tag=" >> $GITHUB_OUTPUT
+          else
+            echo "Latest tag: $LATEST_TAG"
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          echo "# Release $TAG" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+
+          if [ -n "$LATEST_TAG" ]; then
+            echo "## Changes since $LATEST_TAG" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+
+            # Get commits since last tag
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD >> CHANGELOG.md
+          else
+            echo "## Initial Release" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "This is the first tagged release of dry-dbi." >> CHANGELOG.md
+          fi
+
+          echo "" >> CHANGELOG.md
+          echo "## Installation" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo '```bash' >> CHANGELOG.md
+          echo "composer require tallieutallieu/dry-dbi:^${{ steps.get_version.outputs.version }}" >> CHANGELOG.md
+          echo '```' >> CHANGELOG.md
+
+          # Read changelog content for release notes
+          CHANGELOG_CONTENT=$(cat CHANGELOG.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          TAG: v${{ steps.get_version.outputs.version }}
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a $TAG -m "Release $TAG"
+          git push origin $TAG
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+      - name: Run tests (if available)
+        continue-on-error: true
+        run: |
+          if [ -f "vendor/bin/pest" ]; then
+            echo "Running Pest tests..."
+            vendor/bin/pest
+          elif [ -f "vendor/bin/phpunit" ]; then
+            echo "Running PHPUnit tests..."
+            vendor/bin/phpunit
+          else
+            echo "No test runner found, skipping tests"
+          fi
+
+      - name: Validate Composer
+        run: composer validate --strict
+
+      - name: Summary
+        env:
+          MERGED_BRANCH: ${{ steps.get_version.outputs.merged_branch }}
+          BUMP_TYPE: ${{ steps.get_version.outputs.bump_type }}
+          CURRENT_VERSION: ${{ steps.get_version.outputs.current_version }}
+          NEW_VERSION: ${{ steps.get_version.outputs.version }}
+          TAG_EXISTS: ${{ steps.check_tag.outputs.exists }}
+          TRIGGER: ${{ github.event_name }}
+        run: |
+          echo "## 🚀 Automated Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Merged Branch**: \`$MERGED_BRANCH\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump Type**: $BUMP_TYPE ($CURRENT_VERSION → $NEW_VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Version**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: $TRIGGER" >> $GITHUB_STEP_SUMMARY
+          if [ "$TAG_EXISTS" = "true" ]; then
+            echo "- **Status**: ⚠️ Tag already exists, skipped release creation" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ✅ Release created successfully" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌿 Branch-Based Version Bump Rules:" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch Prefix | Bump Type | Example |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| \`feature/\`, \`feat/\`, \`enhancement/\` | **MINOR** | 3.1.0 → 3.2.0 |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`bug/\`, \`fix/\`, \`hotfix/\`, \`patch/\` | **PATCH** | 3.1.0 → 3.1.1 |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`breaking/\`, \`major/\`, \`bc-break/\` | **MAJOR** | 3.1.0 → 4.0.0 |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`chore/\`, \`docs/\`, \`refactor/\` | **PATCH** | 3.1.0 → 3.1.1 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Shortcut**: \`feature/sc-XXXX--*\` | **MINOR** | Auto-detected |" >> $GITHUB_STEP_SUMMARY
