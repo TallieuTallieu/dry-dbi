@@ -1,0 +1,190 @@
+name: Automated Release and Tagging
+
+on:
+  # Trigger on pushes to main branch when composer.json changes
+  push:
+    branches: [main]
+    paths: ['composer.json']
+  
+  # Manual trigger with version input
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 3.2.0, 4.0.0-beta.1)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type of release'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - prerelease
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for changelog generation
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Get version from composer.json or input
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using manual version: $VERSION"
+          else
+            VERSION=$(php -r "echo json_decode(file_get_contents('composer.json'))->version;")
+            echo "Using composer.json version: $VERSION"
+          fi
+          
+          # Validate semantic versioning format
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?$ ]]; then
+            echo "Error: Version '$VERSION' does not follow semantic versioning format"
+            exit 1
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          if git tag -l | grep -q "^$TAG$"; then
+            echo "Tag $TAG already exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest tag for changelog
+        id: latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No previous tags found"
+            echo "tag=" >> $GITHUB_OUTPUT
+          else
+            echo "Latest tag: $LATEST_TAG"
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+          
+          echo "# Release $TAG" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          if [ -n "$LATEST_TAG" ]; then
+            echo "## Changes since $LATEST_TAG" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            
+            # Get commits since last tag
+            git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD >> CHANGELOG.md
+          else
+            echo "## Initial Release" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "This is the first tagged release of dry-dbi." >> CHANGELOG.md
+          fi
+          
+          echo "" >> CHANGELOG.md
+          echo "## Installation" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo '```bash' >> CHANGELOG.md
+          echo "composer require tallieutallieu/dry-dbi:^${{ steps.get_version.outputs.version }}" >> CHANGELOG.md
+          echo '```' >> CHANGELOG.md
+          
+          # Read changelog content for release notes
+          CHANGELOG_CONTENT=$(cat CHANGELOG.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update composer.json version (if manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          php -r "
+            \$composer = json_decode(file_get_contents('composer.json'), true);
+            \$composer['version'] = '$VERSION';
+            file_put_contents('composer.json', json_encode(\$composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+          "
+          
+          # Commit the version update
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add composer.json
+          git commit -m "chore: bump version to $VERSION" || echo "No changes to commit"
+          git push origin main
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a $TAG -m "Release $TAG"
+          git push origin $TAG
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: ${{ github.event.inputs.release_type == 'prerelease' || contains(steps.get_version.outputs.version, '-') }}
+
+      - name: Run tests (if available)
+        continue-on-error: true
+        run: |
+          if [ -f "vendor/bin/pest" ]; then
+            echo "Running Pest tests..."
+            vendor/bin/pest
+          elif [ -f "vendor/bin/phpunit" ]; then
+            echo "Running PHPUnit tests..."
+            vendor/bin/phpunit
+          else
+            echo "No test runner found, skipping tests"
+          fi
+
+      - name: Validate Composer
+        run: composer validate --strict
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: v${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check_tag.outputs.exists }}" = "true" ]; then
+            echo "- **Status**: ⚠️ Tag already exists, skipped release creation" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ✅ Release created successfully" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -7,6 +7,7 @@ Improved DRY databases
 * [Usage](#usage)
 * [Testing](#testing)
 * [Documentation](docs/index.md)
+* [Release Process](docs/release-process.md)
 
 #### Installation
 ```bash
@@ -140,6 +141,27 @@ make test-coverage
 ```
 
 This will execute all tests in the `tests/` directory through Docker. For more information about testing, see [tests/README.md](tests/README.md).
+
+#### Release Management
+
+This project uses automated release management with GitHub Actions. Releases are automatically created when:
+
+- Changes to `composer.json` version field are pushed to the `main` branch
+- Manual workflow dispatch is triggered from the GitHub Actions tab
+
+For detailed information about the release process, versioning strategy, and CI/CD integration, see [Release Process Documentation](docs/release-process.md).
+
+**Quick version bump:**
+```bash
+# Bump patch version (3.1.0 -> 3.1.1)
+php scripts/bump-version.php patch
+
+# Bump minor version (3.1.0 -> 3.2.0)  
+php scripts/bump-version.php minor
+
+# Bump major version (3.1.0 -> 4.0.0)
+php scripts/bump-version.php major
+```
 
 ##### Criteria
 Name					| Description
