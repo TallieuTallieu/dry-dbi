@@ -1,5 +1,30 @@
 # Agent Guidelines for dry-dbi
 
+## Commit Policy
+- **NEVER commit changes without explicit permission**
+- Always ask the user before running `git add`, `git commit`, or `git push`
+- Present a summary of changes and wait for confirmation
+- Exception: Only commit if the user explicitly requests it with commands like "commit this" or "push the changes"
+
+## Shortcut Integration
+- When user says "Let's tackle story XXXX", use `shortcut_stories_get_by_id` to get story details
+- Create comprehensive todo lists using `todowrite` for complex multi-step tasks
+- Update todos as work progresses, marking tasks as in_progress/completed
+- Add detailed comments to stories using `shortcut_stories_create_comment` when work is completed
+- Include implementation details, features delivered, and acceptance criteria status in comments
+- Use emojis and clear formatting in Shortcut comments for better readability
+- **NEVER change story states** - story state changes happen automatically through git integration
+
+### Creating Stories
+- Use `shortcut_stories_create` to create new stories when requested
+- **Name is required** - use clear, descriptive titles
+- **Team or Workflow must be specified**:
+  - If only Team is specified, the default workflow for that team will be used
+  - If Workflow is specified, it will be used regardless of Team
+- **Story types**: `feature` (default), `bug`, or `chore`
+- Stories are automatically added to the default state for the workflow
+- Include detailed descriptions with acceptance criteria when possible
+
 ## Build/Test Commands
 - No test scripts defined in composer.json
 - Use `composer install` to install dependencies
