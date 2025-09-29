@@ -57,13 +57,13 @@ Removes a column from the table (ALTER TABLE only).
 #### timestamps()
 
 ```php
-public function timestamps(string $createdColumn = 'created_at', string $updatedColumn = 'updated_at'): void
+public function timestamps(string $createdColumn = 'created', string $updatedColumn = 'updated'): void
 ```
 
-Adds automatic timestamp management with MySQL triggers. Creates two TIMESTAMP columns and a trigger to automatically update the updated_at column on record changes.
+Adds automatic timestamp management with MySQL triggers. Creates two TIMESTAMP columns and a trigger to automatically update the updated column on record changes.
 
 ```php
-// Use default column names (created_at, updated_at)
+// Use default column names (created, updated)
 $table->timestamps();
 
 // Use custom column names
@@ -71,8 +71,8 @@ $table->timestamps('created_on', 'modified_on');
 ```
 
 **Note:** This creates:
-- A `created_at/created_on` column with `DEFAULT CURRENT_TIMESTAMP`
-- An `updated_at/modified_on` column with `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
+- A `created/created_on` column with `DEFAULT CURRENT_TIMESTAMP`
+- An `updated/modified_on` column with `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
 - A MySQL trigger to automatically update the updated column on UPDATE operations
 
 #### dropTimestampTrigger()
@@ -300,20 +300,20 @@ The dry-dbi library provides automatic timestamp management through MySQL trigge
 When you call `timestamps()` on a TableBuilder:
 
 1. **Column Creation**: Two TIMESTAMP columns are added to your table
-   - `created_at` (or custom name): Set to `CURRENT_TIMESTAMP` when record is created
-   - `updated_at` (or custom name): Set to `CURRENT_TIMESTAMP` and updated automatically on changes
+   - `created` (or custom name): Set to `CURRENT_TIMESTAMP` when record is created
+   - `updated` (or custom name): Set to `CURRENT_TIMESTAMP` and updated automatically on changes
 
-2. **Trigger Creation**: A MySQL trigger is created with the naming convention `{table_name}_updated_at_trigger`
+2. **Trigger Creation**: A MySQL trigger is created with the naming convention `{table_name}_updated_trigger`
 
-3. **Automatic Updates**: The trigger automatically updates the `updated_at` column whenever any field in the record is modified
+3. **Automatic Updates**: The trigger automatically updates the `updated` column whenever any field in the record is modified
 
 ### Trigger Naming Convention
 
-Auto-generated triggers follow this pattern: `{table_name}_updated_at_trigger`
+Auto-generated triggers follow this pattern: `{table_name}_updated_trigger`
 
 For example:
-- Table `users` → Trigger `users_updated_at_trigger`
-- Table `blog_posts` → Trigger `blog_posts_updated_at_trigger`
+- Table `users` → Trigger `users_updated_trigger`
+- Table `blog_posts` → Trigger `blog_posts_updated_trigger`
 
 ### Best Practices
 
@@ -377,8 +377,8 @@ $qb->table('users')
 // Remove timestamp functionality from a table
 $qb->table('users')
    ->alter(function(TableBuilder $table) {
-       $table->dropColumn('created_at');
-       $table->dropColumn('updated_at');
+       $table->dropColumn('created');
+       $table->dropColumn('updated');
        $table->dropTimestampTriggers();
    });
 
