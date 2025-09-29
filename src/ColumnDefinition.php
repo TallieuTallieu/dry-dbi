@@ -15,7 +15,7 @@ class ColumnDefinition
     private $name;
 
     /**
-     * @var $newName
+     * @var string|null $newName
      */
     private $newName;
 
@@ -40,8 +40,8 @@ class ColumnDefinition
     private $null;
 
     /**
-    * @var $defaultVal
-    */
+     * @var mixed $defaultVal
+     */
     private $defaultVal = false;
 
     /**
@@ -57,20 +57,39 @@ class ColumnDefinition
     /**
      * ColumnDefinition constructor.
      * @param string $name
-     * @param string $type
+     * @param bool $isAlter
+     * @throws \InvalidArgumentException
      */
     public function __construct(string $name, bool $isAlter = false)
     {
+        if (empty($name) || !$this->isValidIdentifier($name)) {
+            throw new \InvalidArgumentException('Column name must be a valid identifier');
+        }
         $this->name = $name;
         $this->isAlter = $isAlter;
     }
 
     /**
+     * Validates if a string is a valid SQL identifier
+     * @param string $identifier
+     * @return bool
+     */
+    private function isValidIdentifier(string $identifier): bool
+    {
+        // Basic validation: alphanumeric, underscores, starts with letter or underscore
+        return preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $identifier) === 1;
+    }
+
+    /**
      * @param string $type
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function type(string $type)
+    public function type(string $type): self
     {
+        if (empty($type)) {
+            throw new \InvalidArgumentException('Column type cannot be empty');
+        }
         $this->type = $type;
         return $this;
     }
@@ -80,9 +99,17 @@ class ColumnDefinition
      * @param string $type
      * @param int|null $length
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function rename(string $name, string $type, ?int $length = null)
+    public function rename(string $name, string $type, ?int $length = null): self
     {
+        if (empty($name) || !$this->isValidIdentifier($name)) {
+            throw new \InvalidArgumentException('New column name must be a valid identifier');
+        }
+        if (empty($type)) {
+            throw new \InvalidArgumentException('Column type cannot be empty');
+        }
+        
         $this->newName = $name;
         $this->type = $type;
 
@@ -97,18 +124,19 @@ class ColumnDefinition
      * @param mixed $length
      * @return $this
      */
-    public function length($length)
+    public function length($length): self
     {
         $this->length = $length;
         return $this;
     }
 
     /**
+     * @param bool $autoIncrement
      * @return $this
      */
-    public function primaryKey()
+    public function primaryKey(bool $autoIncrement = true): self
     {
-        $this->autoIncrement = true;
+        $this->autoIncrement = $autoIncrement;
         $this->primaryKey = true;
         return $this;
     }
@@ -116,7 +144,16 @@ class ColumnDefinition
     /**
      * @return $this
      */
-    public function null()
+    public function autoIncrement(): self
+    {
+        $this->autoIncrement = true;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function null(): self
     {
         $this->null = true;
         return $this;
@@ -125,19 +162,27 @@ class ColumnDefinition
     /**
      * @return $this
      */
-    public function notNull()
+    public function notNull(): self
     {
         $this->null = false;
         return $this;
     }
 
-    public function default($defaultVal)
+    /**
+     * @param mixed $defaultVal
+     * @return $this
+     */
+    public function default($defaultVal): self
     {
         $this->defaultVal = $defaultVal;
         return $this;
     }
 
-    public function generate($query)
+    /**
+     * @param string $query
+     * @return $this
+     */
+    public function generate(string $query): self
     {
         $this->generateQuery = $query;
         return $this;
@@ -163,9 +208,9 @@ class ColumnDefinition
         }
 
         if ($this->generateQuery) {
-            $gerateStatement = 'GENERATED ALWAYS as (' . $this->generateQuery . ')';
+            $generateStatement = 'GENERATED ALWAYS as (' . $this->generateQuery . ')';
 
-            $statement[] = $gerateStatement;
+            $statement[] = $generateStatement;
             return implode(' ', $statement);
         }
 
@@ -173,7 +218,9 @@ class ColumnDefinition
 
         if ($this->defaultVal !== false) {
             if (is_string($this->defaultVal)) {
-                $statement[] = "DEFAULT '" . addslashes($this->defaultVal) . "'";
+                // Use proper SQL escaping by replacing single quotes with doubled quotes
+                $escapedValue = str_replace("'", "''", $this->defaultVal);
+                $statement[] = "DEFAULT '" . $escapedValue . "'";
             } else if (is_null($this->defaultVal)) {
                 $statement[] = "DEFAULT NULL";
             }
