@@ -5,16 +5,28 @@ on:
     branches: 
       - main
       - develop
-      - 'release/**'
+      - 'feature/**'
+      - 'feat/**'
+      - 'bug/**'
+      - 'fix/**'
       - 'hotfix/**'
-      - 'version/**'
+      - 'patch/**'
+      - 'bugfix/**'
+      - 'breaking/**'
+      - 'major/**'
+      - 'break/**'
+      - 'bc-break/**'
+      - 'breaking-change/**'
+      - 'enhancement/**'
+      - 'improve/**'
+      - 'add/**'
+      - 'update/**'
+      - 'chore/**'
+      - 'release/**'
   pull_request:
     branches: 
       - main
       - develop
-      - 'release/**'
-      - 'hotfix/**'
-      - 'version/**'
 
 jobs:
   test:

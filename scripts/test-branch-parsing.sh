@@ -1,75 +1,137 @@
 #!/bin/bash
 
-# Test script for branch name parsing logic
+# Test script for automatic version bump logic
 # This simulates the logic from the GitHub Actions workflow
 
-test_branch_parsing() {
+test_version_bump() {
     local BRANCH_NAME="$1"
-    local EXPECTED="$2"
+    local EXPECTED_BUMP="$2"
+    local CURRENT_VERSION="3.1.0"
     
     echo "Testing branch: $BRANCH_NAME"
     
-    VERSION=""
+    BUMP_TYPE=""
     
-    # Pattern 1: release/v3.2.0 or release/3.2.0
-    if [[ $BRANCH_NAME =~ ^release/v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?)$ ]]; then
-        VERSION="${BASH_REMATCH[1]}"
-        echo "  ✓ Matched release pattern: $VERSION"
+    # PATCH: Bug fixes and patches
+    if [[ $BRANCH_NAME =~ ^(bug|fix|hotfix|patch|bugfix)/ ]]; then
+        BUMP_TYPE="patch"
+        echo "  🐛 Detected PATCH bump from branch prefix: ${BASH_REMATCH[1]}"
     
-    # Pattern 2: hotfix/v3.1.1 or hotfix/3.1.1  
-    elif [[ $BRANCH_NAME =~ ^hotfix/v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?)$ ]]; then
-        VERSION="${BASH_REMATCH[1]}"
-        echo "  ✓ Matched hotfix pattern: $VERSION"
+    # MINOR: Features and enhancements  
+    elif [[ $BRANCH_NAME =~ ^(feature|feat|enhancement|improve|add|update)/ ]]; then
+        BUMP_TYPE="minor"
+        echo "  ✨ Detected MINOR bump from branch prefix: ${BASH_REMATCH[1]}"
     
-    # Pattern 3: version/3.2.0 or v3.2.0
-    elif [[ $BRANCH_NAME =~ ^(version/|v)([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?)$ ]]; then
-        VERSION="${BASH_REMATCH[2]}"
-        echo "  ✓ Matched version pattern: $VERSION"
+    # MAJOR: Breaking changes
+    elif [[ $BRANCH_NAME =~ ^(breaking|major|break|bc-break|breaking-change)/ ]]; then
+        BUMP_TYPE="major"
+        echo "  💥 Detected MAJOR bump from branch prefix: ${BASH_REMATCH[1]}"
     
-    # Pattern 4: feature/v3.2.0-feature-name
-    elif [[ $BRANCH_NAME =~ ^feature/v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?) ]]; then
-        VERSION="${BASH_REMATCH[1]}"
-        echo "  ✓ Matched feature pattern: $VERSION"
+    # PATCH: Chores and maintenance (default to patch)
+    elif [[ $BRANCH_NAME =~ ^(chore|docs|style|refactor|test)/ ]]; then
+        BUMP_TYPE="patch"
+        echo "  🔧 Detected PATCH bump from maintenance branch: ${BASH_REMATCH[1]}"
     
-    # Pattern 5: main branch
+    # MINOR: Release branches (default to minor)
+    elif [[ $BRANCH_NAME =~ ^release/ ]]; then
+        BUMP_TYPE="minor"
+        echo "  🚀 Detected MINOR bump from release branch"
+    
+    # PATCH: Main branch (default to patch)
     elif [[ $BRANCH_NAME == "main" ]]; then
-        VERSION="from-composer.json"
-        echo "  ✓ Matched main branch: will use composer.json"
+        BUMP_TYPE="patch"
+        echo "  🏠 Detected PATCH bump from main branch"
     
+    # Try to infer from Shortcut branch pattern: feature/sc-XXXX--description
+    elif [[ $BRANCH_NAME =~ ^feature/sc-[0-9]+-- ]]; then
+        BUMP_TYPE="minor"
+        echo "  🎫 Detected MINOR bump from Shortcut feature branch"
+    
+    # Default to patch for unknown patterns
     else
-        echo "  ✗ No pattern matched"
-        VERSION="NO_MATCH"
+        BUMP_TYPE="patch"
+        echo "  ❓ Unknown branch pattern, defaulting to PATCH bump"
     fi
     
+    # Calculate new version
+    if [[ $CURRENT_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+        MAJOR=${BASH_REMATCH[1]}
+        MINOR=${BASH_REMATCH[2]}
+        PATCH=${BASH_REMATCH[3]}
+        
+        case $BUMP_TYPE in
+            "major")
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+                ;;
+            "minor")
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+                ;;
+            "patch")
+                PATCH=$((PATCH + 1))
+                NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+                ;;
+        esac
+    fi
+    
+    echo "  📦 Version: $CURRENT_VERSION → $NEW_VERSION"
+    
     # Check result
-    if [[ "$VERSION" == "$EXPECTED" ]]; then
-        echo "  ✅ PASS: Expected '$EXPECTED', got '$VERSION'"
+    if [[ "$BUMP_TYPE" == "$EXPECTED_BUMP" ]]; then
+        echo "  ✅ PASS: Expected '$EXPECTED_BUMP', got '$BUMP_TYPE'"
     else
-        echo "  ❌ FAIL: Expected '$EXPECTED', got '$VERSION'"
+        echo "  ❌ FAIL: Expected '$EXPECTED_BUMP', got '$BUMP_TYPE'"
     fi
     echo ""
 }
 
-echo "🧪 Testing Branch Name Parsing Logic"
-echo "===================================="
+echo "🧪 Testing Automatic Version Bump Logic"
+echo "========================================"
 echo ""
 
-# Test cases
-test_branch_parsing "release/v3.2.0" "3.2.0"
-test_branch_parsing "release/3.2.0" "3.2.0"
-test_branch_parsing "release/v4.0.0-beta.1" "4.0.0-beta.1"
-test_branch_parsing "hotfix/v3.1.1" "3.1.1"
-test_branch_parsing "hotfix/3.1.1" "3.1.1"
-test_branch_parsing "hotfix/v3.1.2-urgent" "3.1.2-urgent"
-test_branch_parsing "version/3.2.0" "3.2.0"
-test_branch_parsing "v3.2.0" "3.2.0"
-test_branch_parsing "v4.0.0-alpha.1" "4.0.0-alpha.1"
-test_branch_parsing "feature/v3.2.0-new-api" "3.2.0-new-api"
-test_branch_parsing "feature/v3.2.0-fix-bug" "3.2.0-fix-bug"
-test_branch_parsing "feature/3.2.0-no-v-prefix" "3.2.0-no-v-prefix"
-test_branch_parsing "main" "from-composer.json"
-test_branch_parsing "feature/sc-8322--dry-dbi-auto-tagging-through-github-actions" "NO_MATCH"
-test_branch_parsing "develop" "NO_MATCH"
-test_branch_parsing "bugfix/some-fix" "NO_MATCH"
+# Test cases for MINOR bumps (features)
+echo "🟢 MINOR Bump Tests (Features & Enhancements):"
+test_version_bump "feature/new-api" "minor"
+test_version_bump "feature/sc-8322--auto-tagging" "minor"
+test_version_bump "feat/user-authentication" "minor"
+test_version_bump "enhancement/better-performance" "minor"
+test_version_bump "improve/query-builder" "minor"
+test_version_bump "add/new-criteria" "minor"
+test_version_bump "update/dependencies" "minor"
+test_version_bump "release/v3.2.0" "minor"
+
+echo "🟡 PATCH Bump Tests (Bug Fixes & Maintenance):"
+test_version_bump "bug/query-builder-fix" "patch"
+test_version_bump "fix/memory-leak" "patch"
+test_version_bump "hotfix/security-patch" "patch"
+test_version_bump "patch/minor-update" "patch"
+test_version_bump "bugfix/validation-error" "patch"
+test_version_bump "chore/update-deps" "patch"
+test_version_bump "docs/api-documentation" "patch"
+test_version_bump "style/code-formatting" "patch"
+test_version_bump "refactor/clean-code" "patch"
+test_version_bump "test/add-unit-tests" "patch"
+test_version_bump "main" "patch"
+
+echo "🔴 MAJOR Bump Tests (Breaking Changes):"
+test_version_bump "breaking/api-redesign" "major"
+test_version_bump "major/version-2" "major"
+test_version_bump "break/remove-deprecated" "major"
+test_version_bump "bc-break/new-structure" "major"
+test_version_bump "breaking-change/api-v2" "major"
+
+echo "❓ Unknown Pattern Tests (Default to PATCH):"
+test_version_bump "unknown/some-branch" "patch"
+test_version_bump "custom-prefix/test" "patch"
+test_version_bump "develop" "patch"
 
 echo "🏁 Test completed!"
+echo ""
+echo "📊 Summary:"
+echo "- MINOR: Features, enhancements, additions, releases"
+echo "- PATCH: Bug fixes, maintenance, documentation, unknown"
+echo "- MAJOR: Breaking changes, major versions"

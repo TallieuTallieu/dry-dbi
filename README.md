@@ -144,30 +144,32 @@ This will execute all tests in the `tests/` directory through Docker. For more i
 
 #### Release Management
 
-This project uses **branch-based automated release management** with GitHub Actions. Releases are automatically created when you push to branches with version information:
+This project uses **intelligent automated release management** with GitHub Actions. The system automatically infers the version bump type from your branch name and creates releases accordingly:
 
-- `release/v3.2.0` - Creates release v3.2.0
-- `hotfix/v3.1.1` - Creates hotfix release v3.1.1  
-- `version/3.2.0` - Creates release v3.2.0
-- `v3.2.0` - Creates release v3.2.0
-- `feature/v3.2.0-api` - Creates release v3.2.0
+| Branch Type | Version Bump | Example |
+|---|---|---|
+| `feature/`, `feat/` | **MINOR** | 3.1.0 → 3.2.0 |
+| `bug/`, `fix/`, `hotfix/` | **PATCH** | 3.1.0 → 3.1.1 |
+| `breaking/`, `major/` | **MAJOR** | 3.1.0 → 4.0.0 |
+| `chore/`, `docs/` | **PATCH** | 3.1.0 → 3.1.1 |
 
-For detailed information about supported branch patterns, versioning strategy, and CI/CD integration, see [Release Process Documentation](docs/release-process.md).
+**🎫 Shortcut Integration**: Branches like `feature/sc-8322--description` automatically trigger **MINOR** releases.
 
-**Quick release creation:**
+For detailed information about all supported patterns and manual overrides, see [Release Process Documentation](docs/release-process.md).
+
+**Zero-configuration releases:**
 ```bash
-# Create patch release (hotfix)
-php scripts/bump-version.php patch
-git checkout -b hotfix/v3.1.1 && git add . && git commit -m "chore: bump to 3.1.1" && git push origin hotfix/v3.1.1
+# Feature development (MINOR: 3.1.0 → 3.2.0)
+git checkout -b feature/new-api && git push origin feature/new-api
 
-# Create minor release  
-php scripts/bump-version.php minor
-git checkout -b release/v3.2.0 && git add . && git commit -m "chore: bump to 3.2.0" && git push origin release/v3.2.0
+# Bug fix (PATCH: 3.1.0 → 3.1.1)  
+git checkout -b bug/fix-query-issue && git push origin bug/fix-query-issue
 
-# Create major release
-php scripts/bump-version.php major
-git checkout -b release/v4.0.0 && git add . && git commit -m "chore: bump to 4.0.0" && git push origin release/v4.0.0
+# Breaking change (MAJOR: 3.1.0 → 4.0.0)
+git checkout -b breaking/api-redesign && git push origin breaking/api-redesign
 ```
+
+**No manual version management needed** - just push your branch and get automatic releases! 🚀
 
 ##### Criteria
 Name					| Description

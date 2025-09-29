@@ -4,93 +4,112 @@ This document describes the automated release and tagging system for the dry-dbi
 
 ## Overview
 
-The project uses an automated release system that supports:
-- **Branch-based versioning** - Automatically extracts version from branch names
-- Semantic versioning (major.minor.patch)
-- Automatic tagging and release creation
-- Changelog generation
-- Manual and automatic triggers
-- Integration with CI/CD pipeline
+The project uses an **intelligent automated release system** that:
+- **Automatically infers version bump type** from branch names
+- Supports semantic versioning (major.minor.patch)
+- Creates automatic tagging and releases
+- Generates changelogs from git commits
+- Works seamlessly with Shortcut-generated branches
+- Supports manual overrides when needed
 
-## Branch-Based Versioning
+## 🧠 Automatic Version Bump Inference
 
-The system automatically extracts version information from branch names using these patterns:
+The system automatically determines the version bump type based on your branch name prefix:
 
-| Branch Pattern | Example | Description |
-|---|---|---|
-| `release/v3.2.0` | `release/v3.2.0` | Standard release branch |
-| `release/3.2.0` | `release/3.2.0` | Release branch without 'v' prefix |
-| `hotfix/v3.1.1` | `hotfix/v3.1.1` | Hotfix branch for patch releases |
-| `hotfix/3.1.1` | `hotfix/3.1.1` | Hotfix branch without 'v' prefix |
-| `version/3.2.0` | `version/3.2.0` | Version-specific branch |
-| `v3.2.0` | `v3.2.0` | Direct version branch |
-| `feature/v3.2.0-*` | `feature/v3.2.0-new-api` | Feature branch with version |
-| `main` | `main` | Uses version from composer.json |
+| Branch Prefix | Bump Type | Example | Use Case |
+|---|---|---|---|
+| `feature/`, `feat/` | **MINOR** | 3.1.0 → 3.2.0 | New features |
+| `enhancement/`, `improve/` | **MINOR** | 3.1.0 → 3.2.0 | Enhancements |
+| `add/`, `update/` | **MINOR** | 3.1.0 → 3.2.0 | Additions/updates |
+| `bug/`, `fix/` | **PATCH** | 3.1.0 → 3.1.1 | Bug fixes |
+| `hotfix/`, `patch/` | **PATCH** | 3.1.0 → 3.1.1 | Critical fixes |
+| `bugfix/` | **PATCH** | 3.1.0 → 3.1.1 | Bug fixes |
+| `breaking/`, `major/` | **MAJOR** | 3.1.0 → 4.0.0 | Breaking changes |
+| `break/`, `bc-break/` | **MAJOR** | 3.1.0 → 4.0.0 | Breaking changes |
+| `breaking-change/` | **MAJOR** | 3.1.0 → 4.0.0 | Breaking changes |
+| `chore/`, `docs/` | **PATCH** | 3.1.0 → 3.1.1 | Maintenance |
+| `style/`, `refactor/` | **PATCH** | 3.1.0 → 3.1.1 | Code improvements |
+| `test/` | **PATCH** | 3.1.0 → 3.1.1 | Test updates |
+| `release/` | **MINOR** | 3.1.0 → 3.2.0 | Release branches |
+| `main` | **PATCH** | 3.1.0 → 3.1.1 | Main branch |
 
-## Release Workflows
+### 🎫 Shortcut Integration
 
-### 1. Automatic Release (Branch-Based)
+The system recognizes Shortcut's branch naming pattern `feature/sc-XXXX--description` and automatically applies **MINOR** version bumps for these branches.
 
-When you push to any supported branch pattern, the release workflow will automatically:
+## 🚀 Automatic Release Workflow
 
-1. Extract the version from the branch name
-2. Validate semantic versioning format
-3. Update `composer.json` with the extracted version
-4. Generate changelog from git commits
-5. Create a git tag
-6. Create a GitHub release with release notes
+When you push to **any branch**, the system will:
 
-**Steps to create a release branch:**
+1. **Analyze the branch name** to determine version bump type
+2. **Calculate the new version** based on current version + bump type
+3. **Update `composer.json`** with the new version
+4. **Generate changelog** from git commits since last release
+5. **Create a git tag** with the new version
+6. **Create a GitHub release** with formatted release notes
 
-```bash
-# 1. Create and checkout release branch
-git checkout -b release/v3.2.0
-
-# 2. Make your changes (optional)
-# ... make changes ...
-
-# 3. Push the branch
-git push origin release/v3.2.0
-# This automatically triggers the release workflow
-```
-
-**Steps to create a hotfix:**
+### ✨ Feature Development (MINOR bump)
 
 ```bash
-# 1. Create hotfix branch from main
-git checkout main
-git checkout -b hotfix/v3.1.1
+# Shortcut generates this automatically
+git checkout -b feature/sc-8322--new-api-endpoints
 
-# 2. Fix the issue
-# ... make fixes ...
-git commit -m "fix: resolve critical bug"
+# Make your changes
+git commit -m "feat: add new API endpoints"
 
-# 3. Push the branch
-git push origin hotfix/v3.1.1
-# This automatically triggers the release workflow
+# Push the branch
+git push origin feature/sc-8322--new-api-endpoints
+# ✅ Automatically creates release: 3.1.0 → 3.2.0
 ```
 
-### 2. Manual Release (workflow dispatch)
+### 🐛 Bug Fixes (PATCH bump)
 
-You can manually trigger a release from the GitHub Actions tab:
+```bash
+# Create bug fix branch
+git checkout -b bug/fix-query-builder
+
+# Fix the issue
+git commit -m "fix: resolve query builder parameter binding"
+
+# Push the branch
+git push origin bug/fix-query-builder
+# ✅ Automatically creates release: 3.1.0 → 3.1.1
+```
+
+### 💥 Breaking Changes (MAJOR bump)
+
+```bash
+# Create breaking change branch
+git checkout -b breaking/new-api-structure
+
+# Implement breaking changes
+git commit -m "feat!: redesign API structure"
+
+# Push the branch
+git push origin breaking/new-api-structure
+# ✅ Automatically creates release: 3.1.0 → 4.0.0
+```
+
+### 🎛️ Manual Release Override
+
+You can manually trigger a release or override the automatic detection:
 
 1. Go to **Actions** → **Automated Release and Tagging**
 2. Click **Run workflow**
-3. Select any branch (version will be extracted from branch name)
-4. Optionally enter a version to override the branch-based version
-5. Choose release type (release or prerelease)
-6. Click **Run workflow**
+3. Select any branch
+4. **Optional overrides:**
+   - **Version**: Specify exact version (e.g., `3.2.0-beta.1`)
+   - **Bump Type**: Override auto-detection (`patch`, `minor`, `major`)
+   - **Release Type**: Choose `release` or `prerelease`
+5. Click **Run workflow**
 
-The manual release will:
-- Extract version from branch name (or use provided override)
-- Update `composer.json` with the version
-- Commit the version change to the current branch
-- Create tag and release
+**Manual override examples:**
 
-**Manual version override example:**
-- Branch: `feature/new-api` 
-- Manual version input: `3.2.0-beta.1`
-- Result: Creates release `v3.2.0-beta.1`
+| Scenario | Branch | Override | Result |
+|---|---|---|---|
+| Beta release | `feature/new-api` | Version: `3.2.0-beta.1` | Creates `v3.2.0-beta.1` |
+| Force major | `feature/small-change` | Bump: `major` | 3.1.0 → 4.0.0 |
+| Prerelease | `any-branch` | Type: `prerelease` | Marked as prerelease |
 
 ## Semantic Versioning
 
@@ -216,55 +235,69 @@ The release workflow requires:
 
 ## Examples
 
-### Example 1: Patch Release (Hotfix)
+### Example 1: Shortcut Feature (Auto MINOR)
+
+```bash
+# Shortcut creates this branch automatically
+git checkout -b feature/sc-8322--auto-tagging-through-github-actions
+
+# Develop your feature
+git commit -m "feat: implement automated tagging system"
+
+# Push the branch
+git push origin feature/sc-8322--auto-tagging-through-github-actions
+# ✅ Result: 3.1.0 → 3.2.0 (MINOR bump)
+```
+
+### Example 2: Critical Bug Fix (Auto PATCH)
 
 ```bash
 # Create hotfix branch
-git checkout main
-git checkout -b hotfix/v3.1.1
+git checkout -b hotfix/critical-security-fix
 
-# Fix the bug
-git commit -m "fix: resolve query builder parameter binding"
+# Fix the issue
+git commit -m "fix: resolve security vulnerability"
 
-# Push hotfix branch - automatically triggers release
-git push origin hotfix/v3.1.1
+# Push the branch
+git push origin hotfix/critical-security-fix
+# ✅ Result: 3.1.0 → 3.1.1 (PATCH bump)
 ```
 
-### Example 2: Minor Release with New Feature
+### Example 3: Breaking API Change (Auto MAJOR)
 
 ```bash
-# Create release branch
-git checkout main
-git checkout -b release/v3.2.0
+# Create breaking change branch
+git checkout -b breaking/api-v2
 
-# Add new feature (or merge from feature branches)
-git commit -m "feat: add new criteria for complex queries"
+# Implement breaking changes
+git commit -m "feat!: redesign API for v2"
 
-# Push release branch - automatically triggers release
-git push origin release/v3.2.0
+# Push the branch
+git push origin breaking/api-v2
+# ✅ Result: 3.1.0 → 4.0.0 (MAJOR bump)
 ```
 
-### Example 3: Feature Branch with Version
+### Example 4: Manual Beta Release
 
 ```bash
-# Create feature branch with version
-git checkout -b feature/v3.2.0-new-api
+# Create any branch
+git checkout -b feature/experimental-feature
 
-# Implement feature
-git commit -m "feat: implement new API endpoints"
-
-# Push feature branch - automatically triggers release
-git push origin feature/v3.2.0-new-api
+# Go to GitHub Actions → Run workflow
+# Override: Version = "3.2.0-beta.1", Type = "prerelease"
+# ✅ Result: Creates v3.2.0-beta.1 prerelease
 ```
 
-### Example 4: Manual Pre-release
+### Example 5: Documentation Update (Auto PATCH)
 
-1. Create any branch (e.g., `feature/beta-testing`)
-2. Go to GitHub Actions → Automated Release and Tagging
-3. Click "Run workflow"
-4. Select your branch
-5. Enter version: `4.0.0-beta.1`
-6. Select "prerelease"
-7. Click "Run workflow"
+```bash
+# Create docs branch
+git checkout -b docs/update-api-documentation
 
-This creates a pre-release from any branch with a custom version.
+# Update documentation
+git commit -m "docs: update API documentation"
+
+# Push the branch
+git push origin docs/update-api-documentation
+# ✅ Result: 3.1.0 → 3.1.1 (PATCH bump)
+```
