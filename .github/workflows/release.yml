@@ -1,17 +1,20 @@
 name: Automated Release and Tagging
 
 on:
-  # Trigger on pushes to main branch when composer.json changes
+  # Trigger on pushes to release branches or main branch
   push:
-    branches: [main]
-    paths: ['composer.json']
+    branches: 
+      - main
+      - 'release/**'
+      - 'hotfix/**'
+      - 'version/**'
   
-  # Manual trigger with version input
+  # Manual trigger with optional version override
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 3.2.0, 4.0.0-beta.1)'
-        required: true
+        description: 'Version to release (optional - will use branch name if not provided)'
+        required: false
         type: string
       release_type:
         description: 'Type of release'
@@ -45,25 +48,82 @@ jobs:
       - name: Install dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      - name: Get version from composer.json or input
+      - name: Extract version from branch name or input
         id: get_version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "Current branch: $BRANCH_NAME"
+          
+          # Check if manual version is provided
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
             echo "Using manual version: $VERSION"
           else
-            VERSION=$(php -r "echo json_decode(file_get_contents('composer.json'))->version;")
-            echo "Using composer.json version: $VERSION"
+            # Extract version from branch name using multiple patterns
+            VERSION=""
+            
+            # Pattern 1: release/v3.2.0 or release/3.2.0
+            if [[ $BRANCH_NAME =~ ^release/v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?)$ ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+              echo "Extracted version from release branch: $VERSION"
+            
+            # Pattern 2: hotfix/v3.1.1 or hotfix/3.1.1  
+            elif [[ $BRANCH_NAME =~ ^hotfix/v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?)$ ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+              echo "Extracted version from hotfix branch: $VERSION"
+            
+            # Pattern 3: version/3.2.0 or v3.2.0
+            elif [[ $BRANCH_NAME =~ ^(version/|v)([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?)$ ]]; then
+              VERSION="${BASH_REMATCH[2]}"
+              echo "Extracted version from version branch: $VERSION"
+            
+            # Pattern 4: feature/v3.2.0-feature-name
+            elif [[ $BRANCH_NAME =~ ^feature/v?([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?) ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+              echo "Extracted version from feature branch: $VERSION"
+            
+            # Pattern 5: main branch - use composer.json version
+            elif [[ $BRANCH_NAME == "main" ]]; then
+              if [ -f "composer.json" ]; then
+                VERSION=$(php -r "
+                  \$composer = json_decode(file_get_contents('composer.json'), true);
+                  echo isset(\$composer['version']) ? \$composer['version'] : '';
+                ")
+                if [ -n "$VERSION" ]; then
+                  echo "Using composer.json version: $VERSION"
+                else
+                  echo "Error: No version found in composer.json for main branch"
+                  exit 1
+                fi
+              else
+                echo "Error: composer.json not found for main branch"
+                exit 1
+              fi
+            
+            # No version found in branch name
+            else
+              echo "Error: Could not extract version from branch name '$BRANCH_NAME'"
+              echo "Supported patterns:"
+              echo "  - release/v3.2.0 or release/3.2.0"
+              echo "  - hotfix/v3.1.1 or hotfix/3.1.1"
+              echo "  - version/3.2.0 or v3.2.0"
+              echo "  - feature/v3.2.0-feature-name"
+              echo "  - main (uses composer.json version)"
+              exit 1
+            fi
           fi
           
           # Validate semantic versioning format
           if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?(\+[a-zA-Z0-9\.-]+)?$ ]]; then
             echo "Error: Version '$VERSION' does not follow semantic versioning format"
+            echo "Expected format: X.Y.Z or X.Y.Z-suffix or X.Y.Z+build"
             exit 1
           fi
           
+          echo "Final version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Check if tag already exists
         id: check_tag
@@ -123,22 +183,33 @@ jobs:
           echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Update composer.json version (if manual dispatch)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Update composer.json version
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
+          BRANCH="${{ steps.get_version.outputs.branch }}"
+          
+          # Always update composer.json to match the version being released
+          echo "Updating composer.json version to $VERSION"
           php -r "
             \$composer = json_decode(file_get_contents('composer.json'), true);
             \$composer['version'] = '$VERSION';
             file_put_contents('composer.json', json_encode(\$composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
           "
           
-          # Commit the version update
+          # Commit the version update if there are changes
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add composer.json
-          git commit -m "chore: bump version to $VERSION" || echo "No changes to commit"
-          git push origin main
+          
+          if ! git diff --quiet composer.json; then
+            git add composer.json
+            git commit -m "chore: update composer.json version to $VERSION"
+            
+            # Push to current branch (not necessarily main)
+            git push origin HEAD
+            echo "Updated composer.json version to $VERSION"
+          else
+            echo "composer.json already has version $VERSION, no update needed"
+          fi
 
       - name: Create and push tag
         if: steps.check_tag.outputs.exists == 'false'
@@ -180,6 +251,7 @@ jobs:
       - name: Summary
         run: |
           echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ steps.get_version.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: v${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tag**: v${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
@@ -188,3 +260,10 @@ jobs:
           else
             echo "- **Status**: ✅ Release created successfully" >> $GITHUB_STEP_SUMMARY
           fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Branch Naming Patterns Supported:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`release/v3.2.0\` or \`release/3.2.0\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`hotfix/v3.1.1\` or \`hotfix/3.1.1\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`version/3.2.0\` or \`v3.2.0\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`feature/v3.2.0-feature-name\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`main\` (uses composer.json version)" >> $GITHUB_STEP_SUMMARY

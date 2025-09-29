@@ -144,23 +144,29 @@ This will execute all tests in the `tests/` directory through Docker. For more i
 
 #### Release Management
 
-This project uses automated release management with GitHub Actions. Releases are automatically created when:
+This project uses **branch-based automated release management** with GitHub Actions. Releases are automatically created when you push to branches with version information:
 
-- Changes to `composer.json` version field are pushed to the `main` branch
-- Manual workflow dispatch is triggered from the GitHub Actions tab
+- `release/v3.2.0` - Creates release v3.2.0
+- `hotfix/v3.1.1` - Creates hotfix release v3.1.1  
+- `version/3.2.0` - Creates release v3.2.0
+- `v3.2.0` - Creates release v3.2.0
+- `feature/v3.2.0-api` - Creates release v3.2.0
 
-For detailed information about the release process, versioning strategy, and CI/CD integration, see [Release Process Documentation](docs/release-process.md).
+For detailed information about supported branch patterns, versioning strategy, and CI/CD integration, see [Release Process Documentation](docs/release-process.md).
 
-**Quick version bump:**
+**Quick release creation:**
 ```bash
-# Bump patch version (3.1.0 -> 3.1.1)
+# Create patch release (hotfix)
 php scripts/bump-version.php patch
+git checkout -b hotfix/v3.1.1 && git add . && git commit -m "chore: bump to 3.1.1" && git push origin hotfix/v3.1.1
 
-# Bump minor version (3.1.0 -> 3.2.0)  
+# Create minor release  
 php scripts/bump-version.php minor
+git checkout -b release/v3.2.0 && git add . && git commit -m "chore: bump to 3.2.0" && git push origin release/v3.2.0
 
-# Bump major version (3.1.0 -> 4.0.0)
+# Create major release
 php scripts/bump-version.php major
+git checkout -b release/v4.0.0 && git add . && git commit -m "chore: bump to 4.0.0" && git push origin release/v4.0.0
 ```
 
 ##### Criteria

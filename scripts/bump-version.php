@@ -4,24 +4,35 @@
  * Version Bump Script for dry-dbi
  * 
  * Usage:
- *   php scripts/bump-version.php patch
- *   php scripts/bump-version.php minor
- *   php scripts/bump-version.php major
- *   php scripts/bump-version.php 3.2.1
+ *   php scripts/bump-version.php patch [--branch-type=release|hotfix]
+ *   php scripts/bump-version.php minor [--branch-type=release]
+ *   php scripts/bump-version.php major [--branch-type=release]
+ *   php scripts/bump-version.php 3.2.1 [--branch-type=release|hotfix]
  */
 
 if ($argc < 2) {
-    echo "Usage: php scripts/bump-version.php <patch|minor|major|version>\n";
+    echo "Usage: php scripts/bump-version.php <patch|minor|major|version> [--branch-type=release|hotfix]\n";
     echo "Examples:\n";
-    echo "  php scripts/bump-version.php patch     # 3.1.0 -> 3.1.1\n";
-    echo "  php scripts/bump-version.php minor     # 3.1.0 -> 3.2.0\n";
-    echo "  php scripts/bump-version.php major     # 3.1.0 -> 4.0.0\n";
-    echo "  php scripts/bump-version.php 3.2.1     # Set specific version\n";
+    echo "  php scripts/bump-version.php patch                    # 3.1.0 -> 3.1.1 (creates hotfix/v3.1.1)\n";
+    echo "  php scripts/bump-version.php minor                    # 3.1.0 -> 3.2.0 (creates release/v3.2.0)\n";
+    echo "  php scripts/bump-version.php major                    # 3.1.0 -> 4.0.0 (creates release/v4.0.0)\n";
+    echo "  php scripts/bump-version.php 3.2.1                    # Set specific version (creates release/v3.2.1)\n";
+    echo "  php scripts/bump-version.php patch --branch-type=release  # Force release branch for patch\n";
+    echo "  php scripts/bump-version.php 3.1.1 --branch-type=hotfix   # Force hotfix branch\n";
     exit(1);
 }
 
 $composerFile = __DIR__ . '/../composer.json';
 $type = $argv[1];
+
+// Parse branch type option
+$branchType = null;
+for ($i = 2; $i < $argc; $i++) {
+    if (strpos($argv[$i], '--branch-type=') === 0) {
+        $branchType = substr($argv[$i], 14);
+        break;
+    }
+}
 
 if (!file_exists($composerFile)) {
     echo "Error: composer.json not found\n";
@@ -106,9 +117,32 @@ if (file_put_contents($composerFile, $json) === false) {
     exit(1);
 }
 
+// Determine branch type
+if (!$branchType) {
+    if ($type === 'patch') {
+        $branchType = 'hotfix';
+    } else {
+        $branchType = 'release';
+    }
+}
+
+// Validate branch type
+if (!in_array($branchType, ['release', 'hotfix'])) {
+    echo "Error: Invalid branch type '$branchType'. Use 'release' or 'hotfix'\n";
+    exit(1);
+}
+
+$branchName = "$branchType/v$newVersion";
+
 echo "✅ Version updated successfully!\n";
 echo "\nNext steps:\n";
 echo "1. Review the changes: git diff composer.json\n";
-echo "2. Commit the version bump: git add composer.json && git commit -m \"chore: bump version to $newVersion\"\n";
-echo "3. Push to main branch: git push origin main\n";
-echo "4. The GitHub Actions workflow will automatically create a release\n";
+echo "2. Create and checkout the $branchType branch:\n";
+echo "   git checkout -b $branchName\n";
+echo "3. Commit the version bump:\n";
+echo "   git add composer.json && git commit -m \"chore: bump version to $newVersion\"\n";
+echo "4. Push the $branchType branch:\n";
+echo "   git push origin $branchName\n";
+echo "5. The GitHub Actions workflow will automatically create a release from the branch name!\n";
+echo "\nAlternatively, you can run these commands automatically:\n";
+echo "git checkout -b $branchName && git add composer.json && git commit -m \"chore: bump version to $newVersion\" && git push origin $branchName\n";

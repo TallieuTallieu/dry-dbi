@@ -5,34 +5,69 @@ This document describes the automated release and tagging system for the dry-dbi
 ## Overview
 
 The project uses an automated release system that supports:
+- **Branch-based versioning** - Automatically extracts version from branch names
 - Semantic versioning (major.minor.patch)
 - Automatic tagging and release creation
 - Changelog generation
 - Manual and automatic triggers
 - Integration with CI/CD pipeline
 
+## Branch-Based Versioning
+
+The system automatically extracts version information from branch names using these patterns:
+
+| Branch Pattern | Example | Description |
+|---|---|---|
+| `release/v3.2.0` | `release/v3.2.0` | Standard release branch |
+| `release/3.2.0` | `release/3.2.0` | Release branch without 'v' prefix |
+| `hotfix/v3.1.1` | `hotfix/v3.1.1` | Hotfix branch for patch releases |
+| `hotfix/3.1.1` | `hotfix/3.1.1` | Hotfix branch without 'v' prefix |
+| `version/3.2.0` | `version/3.2.0` | Version-specific branch |
+| `v3.2.0` | `v3.2.0` | Direct version branch |
+| `feature/v3.2.0-*` | `feature/v3.2.0-new-api` | Feature branch with version |
+| `main` | `main` | Uses version from composer.json |
+
 ## Release Workflows
 
-### 1. Automatic Release (composer.json changes)
+### 1. Automatic Release (Branch-Based)
 
-When you push changes to the `main` branch that include modifications to `composer.json`, the release workflow will automatically:
+When you push to any supported branch pattern, the release workflow will automatically:
 
-1. Extract the version from `composer.json`
+1. Extract the version from the branch name
 2. Validate semantic versioning format
-3. Generate changelog from git commits
-4. Create a git tag
-5. Create a GitHub release with release notes
+3. Update `composer.json` with the extracted version
+4. Generate changelog from git commits
+5. Create a git tag
+6. Create a GitHub release with release notes
 
-**Steps to trigger automatic release:**
+**Steps to create a release branch:**
 
 ```bash
-# 1. Update version in composer.json
-vim composer.json  # Change version field
+# 1. Create and checkout release branch
+git checkout -b release/v3.2.0
 
-# 2. Commit and push to main
-git add composer.json
-git commit -m "chore: bump version to 3.2.0"
-git push origin main
+# 2. Make your changes (optional)
+# ... make changes ...
+
+# 3. Push the branch
+git push origin release/v3.2.0
+# This automatically triggers the release workflow
+```
+
+**Steps to create a hotfix:**
+
+```bash
+# 1. Create hotfix branch from main
+git checkout main
+git checkout -b hotfix/v3.1.1
+
+# 2. Fix the issue
+# ... make fixes ...
+git commit -m "fix: resolve critical bug"
+
+# 3. Push the branch
+git push origin hotfix/v3.1.1
+# This automatically triggers the release workflow
 ```
 
 ### 2. Manual Release (workflow dispatch)
@@ -41,15 +76,21 @@ You can manually trigger a release from the GitHub Actions tab:
 
 1. Go to **Actions** → **Automated Release and Tagging**
 2. Click **Run workflow**
-3. Select the `main` branch
-4. Enter the version (e.g., `3.2.0`, `4.0.0-beta.1`)
+3. Select any branch (version will be extracted from branch name)
+4. Optionally enter a version to override the branch-based version
 5. Choose release type (release or prerelease)
 6. Click **Run workflow**
 
 The manual release will:
-- Update `composer.json` with the specified version
-- Commit the version change
-- Create tag and release (same as automatic)
+- Extract version from branch name (or use provided override)
+- Update `composer.json` with the version
+- Commit the version change to the current branch
+- Create tag and release
+
+**Manual version override example:**
+- Branch: `feature/new-api` 
+- Manual version input: `3.2.0-beta.1`
+- Result: Creates release `v3.2.0-beta.1`
 
 ## Semantic Versioning
 
@@ -175,48 +216,55 @@ The release workflow requires:
 
 ## Examples
 
-### Example 1: Patch Release
+### Example 1: Patch Release (Hotfix)
 
 ```bash
-# Fix a bug
-git checkout -b fix/query-builder-bug
-# ... make changes ...
+# Create hotfix branch
+git checkout main
+git checkout -b hotfix/v3.1.1
+
+# Fix the bug
 git commit -m "fix: resolve query builder parameter binding"
 
-# Merge to main
-git checkout main
-git merge fix/query-builder-bug
-
-# Update version for patch release
-vim composer.json  # Change "3.1.0" to "3.1.1"
-git commit -m "chore: bump version to 3.1.1"
-git push origin main  # Triggers automatic release
+# Push hotfix branch - automatically triggers release
+git push origin hotfix/v3.1.1
 ```
 
 ### Example 2: Minor Release with New Feature
 
 ```bash
-# Add new feature
-git checkout -b feature/new-criteria
-# ... implement feature ...
+# Create release branch
+git checkout main
+git checkout -b release/v3.2.0
+
+# Add new feature (or merge from feature branches)
 git commit -m "feat: add new criteria for complex queries"
 
-# Merge to main
-git checkout main
-git merge feature/new-criteria
-
-# Update version for minor release
-vim composer.json  # Change "3.1.1" to "3.2.0"
-git commit -m "chore: bump version to 3.2.0"
-git push origin main  # Triggers automatic release
+# Push release branch - automatically triggers release
+git push origin release/v3.2.0
 ```
 
-### Example 3: Manual Pre-release
+### Example 3: Feature Branch with Version
 
-1. Go to GitHub Actions → Automated Release and Tagging
-2. Click "Run workflow"
-3. Enter version: `4.0.0-beta.1`
-4. Select "prerelease"
-5. Click "Run workflow"
+```bash
+# Create feature branch with version
+git checkout -b feature/v3.2.0-new-api
 
-This creates a pre-release that users can test before the final `4.0.0` release.
+# Implement feature
+git commit -m "feat: implement new API endpoints"
+
+# Push feature branch - automatically triggers release
+git push origin feature/v3.2.0-new-api
+```
+
+### Example 4: Manual Pre-release
+
+1. Create any branch (e.g., `feature/beta-testing`)
+2. Go to GitHub Actions → Automated Release and Tagging
+3. Click "Run workflow"
+4. Select your branch
+5. Enter version: `4.0.0-beta.1`
+6. Select "prerelease"
+7. Click "Run workflow"
+
+This creates a pre-release from any branch with a custom version.
