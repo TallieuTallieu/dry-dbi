@@ -58,6 +58,16 @@ class TableBuilder extends BuildHandler
     private $addForeignKeys = [];
 
     /**
+     * @var array $timestamps
+     */
+    private $timestamps = [];
+
+    /**
+     * @var array $dropTriggers
+     */
+    private $dropTriggers = [];
+
+    /**
      * @param string $name
      * @param string $type
      * @return ColumnDefinition
@@ -163,6 +173,35 @@ class TableBuilder extends BuildHandler
     }
 
     /**
+     * @param string $createdColumn
+     * @param string $updatedColumn
+     * @return void
+     */
+    public function timestamps(string $createdColumn = 'created_at', string $updatedColumn = 'updated_at'): void {
+        $this->timestamps = [
+            'created' => $createdColumn,
+            'updated' => $updatedColumn
+        ];
+    }
+
+    /**
+     * @param string $triggerName
+     * @return void
+     */
+    public function dropTimestampTrigger(string $triggerName): void {
+        $this->dropTriggers[] = $triggerName;
+    }
+
+    /**
+     * Drop auto-generated timestamp triggers for this table
+     * @return void
+     */
+    public function dropTimestampTriggers(): void {
+        $tableName = $this->getTable();
+        $this->dropTriggers[] = $tableName . '_updated_at_trigger';
+    }
+
+    /**
      * @return void
      */
     public function build(): void {
@@ -170,6 +209,14 @@ class TableBuilder extends BuildHandler
 
         foreach ($this->addColumns as $column) {
             $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . $column->getString();
+        }
+
+        if (!empty($this->timestamps)) {
+            $createdColumn = $this->timestamps['created'];
+            $updatedColumn = $this->timestamps['updated'];
+            
+            $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . $this->quote($createdColumn) . ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
+            $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . $this->quote($updatedColumn) . ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
         }
 
         if ($this->isAlter) {
@@ -211,5 +258,48 @@ class TableBuilder extends BuildHandler
         }
 
         $this->addToQuery(implode(', ', $columnStatement));
+
+        $this->buildTriggers();
+    }
+
+    /**
+     * @return void
+     */
+    private function buildTriggers(): void {
+        if (!empty($this->dropTriggers)) {
+            foreach ($this->dropTriggers as $triggerName) {
+                $this->addToQuery('; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName));
+            }
+        }
+
+        // Note: For CREATE TABLE, MySQL's "ON UPDATE CURRENT_TIMESTAMP" handles updates automatically
+        // Triggers are only needed for ALTER TABLE operations where we want to ensure consistency
+        if (!empty($this->timestamps) && $this->isAlter) {
+            $tableName = $this->getTable();
+            $updatedColumn = $this->timestamps['updated'];
+            
+            $triggerName = $tableName . '_updated_at_trigger';
+            
+            $this->addToQuery('; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName));
+            
+            $triggerSql = '; CREATE TRIGGER ' . $this->quote($triggerName) . 
+                         ' BEFORE UPDATE ON ' . $this->quote($tableName) . 
+                         ' FOR EACH ROW SET NEW.' . $this->quote($updatedColumn) . ' = CURRENT_TIMESTAMP';
+            
+            $this->addToQuery($triggerSql);
+        }
+    }
+
+    /**
+     * Get generated trigger names for cleanup
+     * @return array
+     */
+    public function getGeneratedTriggerNames(): array {
+        if (empty($this->timestamps)) {
+            return [];
+        }
+        
+        $tableName = $this->getTable();
+        return [$tableName . '_updated_at_trigger'];
     }
 }
