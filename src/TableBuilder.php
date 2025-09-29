@@ -177,7 +177,7 @@ class TableBuilder extends BuildHandler
      * @param string $updatedColumn
      * @return void
      */
-    public function timestamps(string $createdColumn = 'created_at', string $updatedColumn = 'updated_at'): void {
+    public function timestamps(string $createdColumn = 'created', string $updatedColumn = 'updated'): void {
         $this->timestamps = [
             'created' => $createdColumn,
             'updated' => $updatedColumn
@@ -198,7 +198,7 @@ class TableBuilder extends BuildHandler
      */
     public function dropTimestampTriggers(): void {
         $tableName = $this->getTable();
-        $this->dropTriggers[] = $tableName . '_updated_at_trigger';
+        $this->dropTriggers[] = $tableName . '_updated_trigger';
     }
 
     /**
@@ -278,7 +278,7 @@ class TableBuilder extends BuildHandler
             $tableName = $this->getTable();
             $updatedColumn = $this->timestamps['updated'];
             
-            $triggerName = $tableName . '_updated_at_trigger';
+            $triggerName = $tableName . '_updated_trigger';
             
             $this->addToQuery('; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName));
             
@@ -300,6 +300,6 @@ class TableBuilder extends BuildHandler
         }
         
         $tableName = $this->getTable();
-        return [$tableName . '_updated_at_trigger'];
+        return [$tableName . '_updated_trigger'];
     }
 }
