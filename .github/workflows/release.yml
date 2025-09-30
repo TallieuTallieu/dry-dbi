@@ -33,9 +33,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader
 
       - name: Run verification checks
-        run: |
-          composer validate --strict
-          echo "✅ All checks passed"
+        run: composer validate --strict
 
       - name: Determine version bump type
         id: version-type
@@ -72,9 +70,6 @@ jobs:
             VERSION_TYPE="patch"
           fi
 
-          echo "Branch name: $BRANCH_NAME"
-          echo "Commit message: $COMMIT_MSG"
-          echo "Version type: $VERSION_TYPE"
           echo "version_type=$VERSION_TYPE" >> "$GITHUB_OUTPUT"
 
       - name: Configure git
@@ -85,10 +80,8 @@ jobs:
       - name: Check if version should be bumped
         id: should-release
         run: |
-          # Skip if this is already a version commit
           COMMIT_MSG=$(git log -1 --pretty=%B)
           if [[ "$COMMIT_MSG" == *"chore(release):"* ]] || [[ "$COMMIT_MSG" == *"bump version"* ]]; then
-            echo "Skipping release - this is a version bump commit"
             echo "should_release=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_release=true" >> "$GITHUB_OUTPUT"
@@ -98,49 +91,32 @@ jobs:
         id: version
         if: steps.should-release.outputs.should_release == 'true'
         run: |
-          # Get current version from latest tag
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -z "$LATEST_TAG" ]; then
             OLD_VERSION="0.0.0"
-            echo "No previous tags found, starting from $OLD_VERSION"
           else
-            # Remove 'v' prefix if it exists (handle both v3.2.0 and 3.2.0 formats)
             OLD_VERSION=${LATEST_TAG#v}
-            echo "Latest tag: $LATEST_TAG"
-            echo "Current version: $OLD_VERSION"
           fi
 
-          # Parse current version
           if [[ $OLD_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             MAJOR=${BASH_REMATCH[1]}
             MINOR=${BASH_REMATCH[2]}
             PATCH=${BASH_REMATCH[3]}
 
-            # Apply version bump
             case ${{ steps.version-type.outputs.version_type }} in
-              "major")
-                MAJOR=$((MAJOR + 1))
-                MINOR=0
-                PATCH=0
-                ;;
-              "minor")
-                MINOR=$((MINOR + 1))
-                PATCH=0
-                ;;
-              "patch")
-                PATCH=$((PATCH + 1))
-                ;;
+              "major") MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              "minor") MINOR=$((MINOR + 1)); PATCH=0 ;;
+              "patch") PATCH=$((PATCH + 1)) ;;
             esac
 
             NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           else
-            echo "Error: Invalid current version format '$OLD_VERSION'"
+            echo "Error: Invalid version format '$OLD_VERSION'" >&2
             exit 1
           fi
 
           echo "old_version=$OLD_VERSION" >> "$GITHUB_OUTPUT"
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Bumped version: $OLD_VERSION → $NEW_VERSION (${{ steps.version-type.outputs.version_type }})"
 
       - name: Create and push tag
         if: steps.should-release.outputs.should_release == 'true'
@@ -210,24 +186,3 @@ jobs:
             ```
           draft: false
           prerelease: false
-
-      - name: Run tests (if available)
-        if: steps.should-release.outputs.should_release == 'true'
-        continue-on-error: true
-        run: |
-          if [ -f "vendor/bin/pest" ]; then
-            echo "Running Pest tests..."
-            vendor/bin/pest
-          elif [ -f "vendor/bin/phpunit" ]; then
-            echo "Running PHPUnit tests..."
-            vendor/bin/phpunit
-          else
-            echo "No test runner found, skipping tests"
-          fi
-
-      - name: Notify success
-        if: steps.should-release.outputs.should_release == 'true'
-        run: |
-          echo "🎉 Package tallieutallieu/dry-dbi@${{ steps.version.outputs.new_version }} released successfully!"
-          echo "📦 Version: ${{ steps.version.outputs.old_version }} → ${{ steps.version.outputs.new_version }}"
-          echo "🔄 Type: ${{ steps.version-type.outputs.version_type }}"
