@@ -257,3 +257,184 @@ describe('TableBuilder id() Shorthand', function () {
     });
 
 });
+
+describe('TableBuilder Index Management', function () {
+    
+    it('creates single column index', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('email', 'varchar')->length(255)->notNull();
+        $tableBuilder->addIndex('email');
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('INDEX `idx_email` (`email`)');
+    });
+
+    it('creates composite index with multiple columns', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('posts');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('created', 'timestamp')->notNull();
+        $tableBuilder->addIndex(['user_id', 'created']);
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('INDEX `idx_user_id_created` (`user_id`, `created`)');
+    });
+
+    it('creates multiple indexes', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('products');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('sku', 'varchar')->length(50)->notNull();
+        $tableBuilder->addColumn('category', 'varchar')->length(100)->notNull();
+        $tableBuilder->addColumn('status', 'varchar')->length(20)->notNull();
+        $tableBuilder->addIndex('sku');
+        $tableBuilder->addIndex(['category', 'status']);
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)
+            ->toContain('INDEX `idx_sku` (`sku`)')
+            ->toContain('INDEX `idx_category_status` (`category`, `status`)');
+    });
+
+    it('creates index with custom identifier', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('email', 'varchar')->length(255)->notNull();
+        
+        $index = $tableBuilder->addIndex('email');
+        $index->identifier('custom_email_index');
+        
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('INDEX `custom_email_index` (`email`)');
+    });
+
+    it('creates composite index with custom identifier', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('orders');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('status', 'varchar')->length(20)->notNull();
+        
+        $index = $tableBuilder->addIndex(['user_id', 'status']);
+        $index->identifier('idx_user_orders');
+        
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('INDEX `idx_user_orders` (`user_id`, `status`)');
+    });
+
+    it('adds index in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('users');
+        $tableBuilder->addIndex('email');
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('ADD INDEX `idx_email` (`email`)');
+    });
+
+    it('drops index in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('users');
+        $tableBuilder->dropIndex('email');
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('DROP INDEX `idx_email`');
+    });
+
+    it('drops composite index in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('posts');
+        $tableBuilder->dropIndex(['user_id', 'created']);
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('DROP INDEX `idx_user_id_created`');
+    });
+
+    it('drops index by identifier', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('users');
+        $tableBuilder->dropIndexByIdentifier('custom_email_index');
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('DROP INDEX `custom_email_index`');
+    });
+
+    it('handles multiple index operations in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('products');
+        $tableBuilder->addIndex('sku');
+        $tableBuilder->addIndex(['category', 'status']);
+        $tableBuilder->dropIndex('old_index_column');
+        $tableBuilder->dropIndexByIdentifier('old_custom_index');
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)
+            ->toContain('DROP INDEX `idx_old_index_column`')
+            ->toContain('DROP INDEX `old_custom_index`')
+            ->toContain('ADD INDEX `idx_sku` (`sku`)')
+            ->toContain('ADD INDEX `idx_category_status` (`category`, `status`)');
+    });
+
+    it('creates three column composite index', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('logs');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('action', 'varchar')->length(50)->notNull();
+        $tableBuilder->addColumn('created', 'timestamp')->notNull();
+        $tableBuilder->addIndex(['user_id', 'action', 'created']);
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('INDEX `idx_user_id_action_created` (`user_id`, `action`, `created`)');
+    });
+
+    it('combines indexes with other constraints', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('posts');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('slug', 'varchar')->length(255)->notNull();
+        $tableBuilder->addColumn('status', 'varchar')->length(20)->notNull();
+        $tableBuilder->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+        $tableBuilder->addUnique('slug');
+        $tableBuilder->addIndex('status');
+        $tableBuilder->addIndex(['user_id', 'status']);
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)
+            ->toContain('CONSTRAINT `fk_posts_user_id_users_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE')
+            ->toContain('CONSTRAINT `uq_slug` UNIQUE (`slug`)')
+            ->toContain('INDEX `idx_status` (`status`)')
+            ->toContain('INDEX `idx_user_id_status` (`user_id`, `status`)');
+    });
+
+});
