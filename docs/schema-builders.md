@@ -25,12 +25,35 @@ public function addColumn(string $name, string $type): ColumnDefinition
 Adds a new column to the table. Returns a ColumnDefinition for further configuration.
 
 ```php
-$table->addColumn('name', 'varchar')
-      ->length(255)
-      ->notNull();
+$table->addColumn('name', 'varchar')->length(255)->notNull();
 
-$table->addColumn('id', 'int')
-      ->primaryKey();
+$table->addColumn('id', 'int')->primaryKey();
+```
+
+#### id()
+
+```php
+public function id(string $name = 'id', string $type = 'int', int $length = 11, bool $autoIncrement = true): self
+```
+
+Shorthand method for creating a primary key column. This is a convenient alternative to the verbose `addColumn()->length()->primaryKey()` chain.
+
+```php
+// Create a standard auto-incrementing primary key
+$table->id();
+// Equivalent to: $table->addColumn('id', 'int')->length(11)->primaryKey();
+
+// Custom column name
+$table->id('user_id');
+
+// Custom type (e.g., bigint for large tables)
+$table->id('order_id', 'bigint');
+
+// Custom length
+$table->id('item_id', 'int', 20);
+
+// Without auto-increment (for composite keys or manual ID management)
+$table->id('setting_id', 'int', 11, false);
 ```
 
 #### changeColumn()
@@ -42,8 +65,7 @@ public function changeColumn(string $name): ColumnDefinition
 Modifies an existing column (ALTER TABLE only).
 
 ```php
-$table->changeColumn('name')
-      ->rename('full_name', 'varchar', 300);
+$table->changeColumn('name')->rename('full_name', 'varchar', 300);
 ```
 
 #### dropColumn()
@@ -71,6 +93,7 @@ $table->timestamps('created_on', 'modified_on');
 ```
 
 **Note:** This creates:
+
 - A `created/created_on` column with `DEFAULT CURRENT_TIMESTAMP`
 - An `updated/modified_on` column with `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
 - A MySQL trigger to automatically update the updated column on UPDATE operations
@@ -102,8 +125,9 @@ public function addForeignKey(string $column, string $foreignTable, string $fore
 Adds a foreign key constraint.
 
 ```php
-$table->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE')
-      ->identifier('fk_posts_user');
+$table
+  ->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE')
+  ->identifier('fk_posts_user');
 ```
 
 #### dropForeignKey()
@@ -264,9 +288,10 @@ public function as(string $alias): self
 Sets an alias for the joined table.
 
 ```php
-$qb->leftJoin('user_profiles')
-   ->as('profile')
-   ->on('users.id', '=', 'profile.user_id');
+$qb
+  ->leftJoin('user_profiles')
+  ->as('profile')
+  ->on('users.id', '=', 'profile.user_id');
 ```
 
 ## Definition Classes
@@ -312,6 +337,7 @@ When you call `timestamps()` on a TableBuilder:
 Auto-generated triggers follow this pattern: `{table_name}_updated_trigger`
 
 For example:
+
 - Table `users` → Trigger `users_updated_trigger`
 - Table `blog_posts` → Trigger `blog_posts_updated_trigger`
 
@@ -327,74 +353,85 @@ For example:
 ### Creating a Table
 
 ```php
-$qb->table('users')
-   ->create(function(TableBuilder $table) {
-       $table->addColumn('id', 'int')->primaryKey();
-       $table->addColumn('name', 'varchar')->length(255)->notNull();
-       $table->addColumn('email', 'varchar')->length(255)->notNull();
-       
-       // Add automatic timestamp management
-       $table->timestamps();
-       
-       $table->addUnique('email');
-   });
+$qb->table('users')->create(function (TableBuilder $table) {
+  // Use the id() shorthand for primary key
+  $table->id();
+  $table->addColumn('name', 'varchar')->length(255)->notNull();
+  $table->addColumn('email', 'varchar')->length(255)->notNull();
+
+  // Add automatic timestamp management
+  $table->timestamps();
+
+  $table->addUnique('email');
+});
 ```
 
 ### Creating a Table with Custom Timestamp Columns
 
 ```php
-$qb->table('posts')
-   ->create(function(TableBuilder $table) {
-       $table->addColumn('id', 'int')->primaryKey();
-       $table->addColumn('title', 'varchar')->length(255)->notNull();
-       $table->addColumn('content', 'text');
-       
-       // Use custom timestamp column names
-       $table->timestamps('created_on', 'modified_on');
-   });
+$qb->table('posts')->create(function (TableBuilder $table) {
+  // Custom primary key name with bigint type
+  $table->id('post_id', 'bigint');
+  $table->addColumn('title', 'varchar')->length(255)->notNull();
+  $table->addColumn('content', 'text');
+
+  // Use custom timestamp column names
+  $table->timestamps('created_on', 'modified_on');
+});
+```
+
+### Creating a Table with Custom Timestamp Columns
+
+```php
+$qb->table('posts')->create(function (TableBuilder $table) {
+  $table->addColumn('id', 'int')->primaryKey();
+  $table->addColumn('title', 'varchar')->length(255)->notNull();
+  $table->addColumn('content', 'text');
+
+  // Use custom timestamp column names
+  $table->timestamps('created_on', 'modified_on');
+});
 ```
 
 ### Altering a Table
 
 ```php
-$qb->table('users')
-   ->alter(function(TableBuilder $table) {
-       $table->addColumn('phone', 'varchar')->length(20);
-       $table->changeColumn('name')->length(300);
-       $table->dropColumn('old_field');
-       
-       // Add timestamp functionality to existing table
-       $table->timestamps();
-       
-       $table->addForeignKey('role_id', 'roles', 'id', 'SET NULL');
-       $table->dropForeignKeyByIdentifier('old_fk_constraint');
-   });
+$qb->table('users')->alter(function (TableBuilder $table) {
+  $table->addColumn('phone', 'varchar')->length(20);
+  $table->changeColumn('name')->length(300);
+  $table->dropColumn('old_field');
+
+  // Add timestamp functionality to existing table
+  $table->timestamps();
+
+  $table->addForeignKey('role_id', 'roles', 'id', 'SET NULL');
+  $table->dropForeignKeyByIdentifier('old_fk_constraint');
+});
 ```
 
 ### Managing Timestamp Triggers
 
 ```php
 // Remove timestamp functionality from a table
-$qb->table('users')
-   ->alter(function(TableBuilder $table) {
-       $table->dropColumn('created');
-       $table->dropColumn('updated');
-       $table->dropTimestampTriggers();
-   });
+$qb->table('users')->alter(function (TableBuilder $table) {
+  $table->dropColumn('created');
+  $table->dropColumn('updated');
+  $table->dropTimestampTriggers();
+});
 
 // Update timestamp trigger (recreate with new column names)
-$qb->table('posts')
-   ->alter(function(TableBuilder $table) {
-       $table->dropTimestampTriggers();
-       $table->timestamps('date_created', 'date_modified');
-   });
+$qb->table('posts')->alter(function (TableBuilder $table) {
+  $table->dropTimestampTriggers();
+  $table->timestamps('date_created', 'date_modified');
+});
 ```
 
 ### Complex Join
 
 ```php
-$qb->leftJoin('user_profiles')
-   ->as('profile')
-   ->on('users.id', '=', 'profile.user_id')
-   ->on('profile.is_active', '=', '1');
+$qb
+  ->leftJoin('user_profiles')
+  ->as('profile')
+  ->on('users.id', '=', 'profile.user_id')
+  ->on('profile.is_active', '=', '1');
 ```

@@ -171,3 +171,89 @@ describe('TableBuilder Basic Functionality', function () {
     });
 
 });
+
+describe('TableBuilder id() Shorthand', function () {
+    
+    it('creates primary key with default parameters', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        $tableBuilder->id();
+        $tableBuilder->addColumn('name', 'varchar')->length(255)->notNull();
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('`id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY');
+    });
+
+    it('creates primary key with custom name', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('products');
+        $tableBuilder->id('product_id');
+        $tableBuilder->addColumn('name', 'varchar')->length(255)->notNull();
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('`product_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY');
+    });
+
+    it('creates primary key with custom type', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('orders');
+        $tableBuilder->id('order_id', 'bigint');
+        $tableBuilder->addColumn('total', 'decimal')->length('10,2')->notNull();
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('`order_id` BIGINT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY');
+    });
+
+    it('creates primary key with custom length', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('items');
+        $tableBuilder->id('item_id', 'int', 20);
+        $tableBuilder->addColumn('description', 'text')->null();
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('`item_id` INT(20) NOT NULL AUTO_INCREMENT PRIMARY KEY');
+    });
+
+    it('creates primary key without auto increment', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('settings');
+        $tableBuilder->id('setting_id', 'int', 11, false);
+        $tableBuilder->addColumn('value', 'varchar')->length(255)->notNull();
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)
+            ->toContain('`setting_id` INT(11) NOT NULL PRIMARY KEY')
+            ->not->toContain('AUTO_INCREMENT');
+    });
+
+    it('maintains fluent interface', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        
+        $result = $tableBuilder->id();
+        
+        expect($result)->toBe($tableBuilder);
+    });
+
+    it('works in alter table context', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('legacy_table');
+        $tableBuilder->id('new_id');
+        $tableBuilder->build();
+        
+        $query = $tableBuilder->getQuery();
+        
+        expect($query)->toContain('ADD `new_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY');
+    });
+
+});

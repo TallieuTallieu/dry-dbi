@@ -13,7 +13,8 @@ class TableBuilder extends BuildHandler
      * TableBuilder constructor.
      * @param bool $isAlter
      */
-    public function __construct(bool $isAlter = false) {
+    public function __construct(bool $isAlter = false)
+    {
         $this->isAlter = $isAlter;
     }
 
@@ -73,11 +74,14 @@ class TableBuilder extends BuildHandler
      * @return ColumnDefinition
      * @throws \InvalidArgumentException
      */
-    public function addColumn(string $name, string $type): ColumnDefinition {
+    public function addColumn(string $name, string $type): ColumnDefinition
+    {
         if (empty($name) || empty($type)) {
-            throw new \InvalidArgumentException('Column name and type cannot be empty');
+            throw new \InvalidArgumentException(
+                'Column name and type cannot be empty'
+            );
         }
-        
+
         $column = new ColumnDefinition($name);
         $column->type($type);
         $this->addColumns[] = $column;
@@ -86,15 +90,37 @@ class TableBuilder extends BuildHandler
     }
 
     /**
+     * Shorthand method for creating a primary key column
+     * @param string $name
+     * @param string $type
+     * @param int $length
+     * @param bool $autoIncrement
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function id(
+        string $name = 'id',
+        string $type = 'int',
+        int $length = 11,
+        bool $autoIncrement = true
+    ): self {
+        $this->addColumn($name, $type)
+            ->length($length)
+            ->primaryKey($autoIncrement);
+        return $this;
+    }
+
+    /**
      * @param string $name
      * @return ColumnDefinition
      * @throws \InvalidArgumentException
      */
-    public function changeColumn(string $name): ColumnDefinition {
+    public function changeColumn(string $name): ColumnDefinition
+    {
         if (empty($name)) {
             throw new \InvalidArgumentException('Column name cannot be empty');
         }
-        
+
         $column = new ColumnDefinition($name, true);
         $this->changeColumns[] = $column;
 
@@ -109,8 +135,21 @@ class TableBuilder extends BuildHandler
      * @param string $onUpdate
      * @return void
      */
-    public function dropForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id', string $onDelete = '', string $onUpdate = ''): void {
-        $foreignKey = new ForeignKeyDefinition($this->getTable(), $column, $foreignTable, $foreignColumn, $onDelete, $onUpdate);
+    public function dropForeignKey(
+        string $column,
+        string $foreignTable,
+        string $foreignColumn = 'id',
+        string $onDelete = '',
+        string $onUpdate = ''
+    ): void {
+        $foreignKey = new ForeignKeyDefinition(
+            $this->getTable(),
+            $column,
+            $foreignTable,
+            $foreignColumn,
+            $onDelete,
+            $onUpdate
+        );
         $this->dropForeignKeys[] = $foreignKey;
     }
 
@@ -118,7 +157,8 @@ class TableBuilder extends BuildHandler
      * @param string $identifier
      * @return void
      */
-    public function dropForeignKeyByIdentifier(string $identifier): void {
+    public function dropForeignKeyByIdentifier(string $identifier): void
+    {
         $this->dropForeignKeyIdentifiers[] = $identifier;
     }
 
@@ -131,12 +171,27 @@ class TableBuilder extends BuildHandler
      * @return ForeignKeyDefinition
      * @throws \InvalidArgumentException
      */
-    public function addForeignKey(string $column, string $foreignTable, string $foreignColumn = 'id', string $onDelete = '', string $onUpdate = ''): ForeignKeyDefinition {
+    public function addForeignKey(
+        string $column,
+        string $foreignTable,
+        string $foreignColumn = 'id',
+        string $onDelete = '',
+        string $onUpdate = ''
+    ): ForeignKeyDefinition {
         if (empty($column) || empty($foreignTable) || empty($foreignColumn)) {
-            throw new \InvalidArgumentException('Column, foreign table, and foreign column cannot be empty');
+            throw new \InvalidArgumentException(
+                'Column, foreign table, and foreign column cannot be empty'
+            );
         }
-        
-        $foreignKey = new ForeignKeyDefinition($this->getTable(), $column, $foreignTable, $foreignColumn, $onDelete, $onUpdate);
+
+        $foreignKey = new ForeignKeyDefinition(
+            $this->getTable(),
+            $column,
+            $foreignTable,
+            $foreignColumn,
+            $onDelete,
+            $onUpdate
+        );
         $this->addForeignKeys[] = $foreignKey;
 
         return $foreignKey;
@@ -146,7 +201,8 @@ class TableBuilder extends BuildHandler
      * @param string $column
      * @return UniqueDefinition
      */
-    public function addUnique(string $column): UniqueDefinition {
+    public function addUnique(string $column): UniqueDefinition
+    {
         $unique = new UniqueDefinition($column);
         $this->addUniques[] = $unique;
 
@@ -157,7 +213,8 @@ class TableBuilder extends BuildHandler
      * @param string $column
      * @return UniqueDefinition
      */
-    public function dropUnique(string $column): UniqueDefinition {
+    public function dropUnique(string $column): UniqueDefinition
+    {
         $unique = new UniqueDefinition($column);
         $this->dropUniques[] = $unique;
 
@@ -168,7 +225,8 @@ class TableBuilder extends BuildHandler
      * @param string $name
      * @return void
      */
-    public function dropColumn(string $name): void {
+    public function dropColumn(string $name): void
+    {
         $this->dropColumns[] = $name;
     }
 
@@ -177,10 +235,13 @@ class TableBuilder extends BuildHandler
      * @param string $updatedColumn
      * @return void
      */
-    public function timestamps(string $createdColumn = 'created', string $updatedColumn = 'updated'): void {
+    public function timestamps(
+        string $createdColumn = 'created',
+        string $updatedColumn = 'updated'
+    ): void {
         $this->timestamps = [
             'created' => $createdColumn,
-            'updated' => $updatedColumn
+            'updated' => $updatedColumn,
         ];
     }
 
@@ -188,7 +249,8 @@ class TableBuilder extends BuildHandler
      * @param string $triggerName
      * @return void
      */
-    public function dropTimestampTrigger(string $triggerName): void {
+    public function dropTimestampTrigger(string $triggerName): void
+    {
         $this->dropTriggers[] = $triggerName;
     }
 
@@ -196,7 +258,8 @@ class TableBuilder extends BuildHandler
      * Drop auto-generated timestamp triggers for this table
      * @return void
      */
-    public function dropTimestampTriggers(): void {
+    public function dropTimestampTriggers(): void
+    {
         $tableName = $this->getTable();
         $this->dropTriggers[] = $tableName . '_updated_trigger';
     }
@@ -204,39 +267,51 @@ class TableBuilder extends BuildHandler
     /**
      * @return void
      */
-    public function build(): void {
+    public function build(): void
+    {
         $columnStatement = [];
 
         foreach ($this->addColumns as $column) {
-            $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . $column->getString();
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') . $column->getString();
         }
 
         if (!empty($this->timestamps)) {
             $createdColumn = $this->timestamps['created'];
             $updatedColumn = $this->timestamps['updated'];
-            
-            $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . $this->quote($createdColumn) . ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
-            $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . $this->quote($updatedColumn) . ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
+
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') .
+                $this->quote($createdColumn) .
+                ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP';
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') .
+                $this->quote($updatedColumn) .
+                ' TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
         }
 
         if ($this->isAlter) {
-
             foreach ($this->changeColumns as $column) {
                 $columnStatement[] = 'CHANGE ' . $column->getString();
             }
 
             foreach ($this->dropForeignKeys as $foreignKey) {
-                $columnStatement[] = 'DROP INDEX ' . $this->quote($foreignKey->getIdentifier());
-                $columnStatement[] = 'DROP FOREIGN KEY ' . $this->quote($foreignKey->getIdentifier());
+                $columnStatement[] =
+                    'DROP INDEX ' . $this->quote($foreignKey->getIdentifier());
+                $columnStatement[] =
+                    'DROP FOREIGN KEY ' .
+                    $this->quote($foreignKey->getIdentifier());
             }
 
             foreach ($this->dropForeignKeyIdentifiers as $identifier) {
                 $columnStatement[] = 'DROP INDEX ' . $this->quote($identifier);
-                $columnStatement[] = 'DROP FOREIGN KEY ' . $this->quote($identifier);
+                $columnStatement[] =
+                    'DROP FOREIGN KEY ' . $this->quote($identifier);
             }
 
             foreach ($this->dropUniques as $unique) {
-                $columnStatement[] = 'DROP INDEX ' . $this->quote($unique->getIdentifier());
+                $columnStatement[] =
+                    'DROP INDEX ' . $this->quote($unique->getIdentifier());
             }
 
             foreach ($this->dropColumns as $column) {
@@ -245,16 +320,34 @@ class TableBuilder extends BuildHandler
         }
 
         foreach ($this->addForeignKeys as $foreignKey) {
-            $columnStatement[] = ($this->isAlter ? 'ADD ' : '')
-            . 'CONSTRAINT ' . $this->quote($foreignKey->getIdentifier())
-            . ' FOREIGN KEY (' . $this->quote($foreignKey->getColumn()) . ') '
-            . 'REFERENCES ' . $this->quote($foreignKey->getForeignTable()) . ' (' . $this->quote($foreignKey->getForeignColumn()) . ')'
-            . (empty($foreignKey->getOnDelete()) ? '' : ' ON DELETE ' . $foreignKey->getOnDelete())
-            . (empty($foreignKey->getOnUpdate()) ? '' : ' ON UPDATE ' . $foreignKey->getOnUpdate());
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') .
+                'CONSTRAINT ' .
+                $this->quote($foreignKey->getIdentifier()) .
+                ' FOREIGN KEY (' .
+                $this->quote($foreignKey->getColumn()) .
+                ') ' .
+                'REFERENCES ' .
+                $this->quote($foreignKey->getForeignTable()) .
+                ' (' .
+                $this->quote($foreignKey->getForeignColumn()) .
+                ')' .
+                (empty($foreignKey->getOnDelete())
+                    ? ''
+                    : ' ON DELETE ' . $foreignKey->getOnDelete()) .
+                (empty($foreignKey->getOnUpdate())
+                    ? ''
+                    : ' ON UPDATE ' . $foreignKey->getOnUpdate());
         }
 
         foreach ($this->addUniques as $unique) {
-            $columnStatement[] = ($this->isAlter ? 'ADD ' : '') . 'CONSTRAINT ' . $this->quote($unique->getIdentifier()) . ' UNIQUE (' . $this->quote($unique->getColumn()) . ')';
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') .
+                'CONSTRAINT ' .
+                $this->quote($unique->getIdentifier()) .
+                ' UNIQUE (' .
+                $this->quote($unique->getColumn()) .
+                ')';
         }
 
         $this->addToQuery(implode(', ', $columnStatement));
@@ -265,10 +358,13 @@ class TableBuilder extends BuildHandler
     /**
      * @return void
      */
-    private function buildTriggers(): void {
+    private function buildTriggers(): void
+    {
         if (!empty($this->dropTriggers)) {
             foreach ($this->dropTriggers as $triggerName) {
-                $this->addToQuery('; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName));
+                $this->addToQuery(
+                    '; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName)
+                );
             }
         }
 
@@ -277,15 +373,22 @@ class TableBuilder extends BuildHandler
         if (!empty($this->timestamps) && $this->isAlter) {
             $tableName = $this->getTable();
             $updatedColumn = $this->timestamps['updated'];
-            
+
             $triggerName = $tableName . '_updated_trigger';
-            
-            $this->addToQuery('; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName));
-            
-            $triggerSql = '; CREATE TRIGGER ' . $this->quote($triggerName) . 
-                         ' BEFORE UPDATE ON ' . $this->quote($tableName) . 
-                         ' FOR EACH ROW SET NEW.' . $this->quote($updatedColumn) . ' = CURRENT_TIMESTAMP';
-            
+
+            $this->addToQuery(
+                '; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName)
+            );
+
+            $triggerSql =
+                '; CREATE TRIGGER ' .
+                $this->quote($triggerName) .
+                ' BEFORE UPDATE ON ' .
+                $this->quote($tableName) .
+                ' FOR EACH ROW SET NEW.' .
+                $this->quote($updatedColumn) .
+                ' = CURRENT_TIMESTAMP';
+
             $this->addToQuery($triggerSql);
         }
     }
@@ -294,12 +397,14 @@ class TableBuilder extends BuildHandler
      * Get generated trigger names for cleanup
      * @return array
      */
-    public function getGeneratedTriggerNames(): array {
+    public function getGeneratedTriggerNames(): array
+    {
         if (empty($this->timestamps)) {
             return [];
         }
-        
+
         $tableName = $this->getTable();
         return [$tableName . '_updated_trigger'];
     }
 }
+
