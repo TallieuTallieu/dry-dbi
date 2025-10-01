@@ -168,6 +168,55 @@ public function dropUnique(string $column): UniqueDefinition
 
 Removes a unique constraint (ALTER TABLE only).
 
+### Index Operations
+
+#### addIndex()
+
+```php
+public function addIndex($columns): IndexDefinition
+```
+
+Adds a regular (non-unique) index to improve query performance. Accepts either a single column name or an array of column names for composite indexes.
+
+```php
+// Single column index
+$table->addIndex('email');
+
+// Composite index (multiple columns)
+$table->addIndex(['user_id', 'created']);
+
+// Custom identifier
+$table->addIndex('email')->identifier('custom_email_idx');
+```
+
+#### dropIndex()
+
+```php
+public function dropIndex($columns): IndexDefinition
+```
+
+Removes an index from the table (ALTER TABLE only). Accepts either a single column name or an array of column names.
+
+```php
+// Drop single column index
+$table->dropIndex('email');
+
+// Drop composite index
+$table->dropIndex(['user_id', 'created']);
+```
+
+#### dropIndexByIdentifier()
+
+```php
+public function dropIndexByIdentifier(string $identifier): void
+```
+
+Removes an index by its identifier name (ALTER TABLE only).
+
+```php
+$table->dropIndexByIdentifier('custom_email_idx');
+```
+
 ## ColumnDefinition
 
 Defines column properties and constraints.
@@ -316,6 +365,44 @@ Represents a unique constraint.
 
 **Auto-generated identifier format:** `uq_{column}`
 
+### IndexDefinition
+
+Represents a database index for improving query performance.
+
+#### identifier()
+
+```php
+public function identifier(string $identifierName): self
+```
+
+Sets a custom identifier name for the index.
+
+**Auto-generated identifier format:** `idx_{column}` or `idx_{column1}_{column2}_{...}` for composite indexes
+
+#### getColumns()
+
+```php
+public function getColumns(): array
+```
+
+Returns the array of column names included in the index.
+
+#### isComposite()
+
+```php
+public function isComposite(): bool
+```
+
+Returns `true` if the index spans multiple columns, `false` for single-column indexes.
+
+```php
+$index = $table->addIndex(['user_id', 'status']);
+$index->isComposite(); // true
+
+$index = $table->addIndex('email');
+$index->isComposite(); // false
+```
+
 ## Timestamp Management
 
 The dry-dbi library provides automatic timestamp management through MySQL triggers, eliminating the need to manually update timestamp columns in your application code.
@@ -358,11 +445,17 @@ $qb->table('users')->create(function (TableBuilder $table) {
   $table->id();
   $table->addColumn('name', 'varchar')->length(255)->notNull();
   $table->addColumn('email', 'varchar')->length(255)->notNull();
+  $table->addColumn('status', 'varchar')->length(20)->notNull();
 
   // Add automatic timestamp management
   $table->timestamps();
 
+  // Add unique constraint
   $table->addUnique('email');
+
+  // Add indexes for better query performance
+  $table->addIndex('status');
+  $table->addIndex('name');
 });
 ```
 
@@ -406,6 +499,10 @@ $qb->table('users')->alter(function (TableBuilder $table) {
 
   $table->addForeignKey('role_id', 'roles', 'id', 'SET NULL');
   $table->dropForeignKeyByIdentifier('old_fk_constraint');
+
+  // Add new indexes
+  $table->addIndex('phone');
+  $table->dropIndex('old_index_column');
 });
 ```
 
@@ -423,6 +520,59 @@ $qb->table('users')->alter(function (TableBuilder $table) {
 $qb->table('posts')->alter(function (TableBuilder $table) {
   $table->dropTimestampTriggers();
   $table->timestamps('date_created', 'date_modified');
+});
+```
+
+### Working with Indexes
+
+```php
+// Create table with multiple indexes
+$qb->table('posts')->create(function (TableBuilder $table) {
+  $table->id();
+  $table->addColumn('user_id', 'int')->notNull();
+  $table->addColumn('category', 'varchar')->length(100)->notNull();
+  $table->addColumn('status', 'varchar')->length(20)->notNull();
+  $table->addColumn('slug', 'varchar')->length(255)->notNull();
+  $table->addColumn('title', 'varchar')->length(255)->notNull();
+  $table->timestamps();
+
+  // Foreign key
+  $table->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+
+  // Unique constraint for slug
+  $table->addUnique('slug');
+
+  // Single column indexes for frequently queried fields
+  $table->addIndex('status');
+  $table->addIndex('category');
+
+  // Composite index for queries filtering by user and status
+  $table->addIndex(['user_id', 'status']);
+
+  // Composite index with custom identifier
+  $table
+    ->addIndex(['category', 'status', 'created'])
+    ->identifier('idx_posts_category_filter');
+});
+
+// Alter table to add/remove indexes
+$qb->table('posts')->alter(function (TableBuilder $table) {
+  // Add new index
+  $table->addIndex('title');
+
+  // Drop old index
+  $table->dropIndex('category');
+
+  // Drop composite index
+  $table->dropIndex(['user_id', 'status']);
+
+  // Drop index by custom identifier
+  $table->dropIndexByIdentifier('idx_posts_category_filter');
+
+  // Add new composite index with better column order
+  $table
+    ->addIndex(['status', 'user_id', 'created'])
+    ->identifier('idx_posts_optimized');
 });
 ```
 
