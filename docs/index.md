@@ -8,37 +8,36 @@ A PHP 8.1+ database abstraction library providing a clean, fluent interface for 
 // Create a repository
 class UserRepository extends BaseRepository
 {
-    protected $model = User::class;
-    
-    public function active(): self
-    {
-        $this->addCriteria(new IsTrue('is_active'));
-        return $this;
-    }
+  protected $model = User::class;
+
+  public function active(): self
+  {
+    $this->addCriteria(new IsTrue('is_active'));
+    return $this;
+  }
 }
 
 // Use the repository
-$users = UserRepository::create()
-    ->active()
-    ->orderBy('name')
-    ->amount(10)
-    ->get();
+$users = UserRepository::create()->active()->orderBy('name')->amount(10)->get();
 ```
 
 ## Core Components
 
 ### [Repository Pattern](repository.md)
+
 - **[Repository](repository.md#repository-abstract)** - Abstract base class for all repositories
 - **[BaseRepository](repository.md#baserepository)** - Common repository functionality with fluent interface
 - Repository lifecycle and query execution
 
 ### [Query Building](query-builder.md)
+
 - **[QueryBuilder](query-builder.md)** - Fluent SQL query construction
 - SELECT, WHERE, JOIN, ORDER BY, GROUP BY operations
 - Schema operations (CREATE, ALTER, DROP)
 - Parameter binding and SQL injection protection
 
 ### [Criteria System](criteria.md)
+
 - **[Comparison Criteria](criteria.md#comparison-criteria)** - Equals, GreaterThan, LessThan, etc.
 - **[Null Checks](criteria.md#null-checks)** - IsNull, NotNull
 - **[Boolean Checks](criteria.md#boolean-checks)** - IsTrue, IsFalse
@@ -47,23 +46,28 @@ $users = UserRepository::create()
 - Custom criteria creation
 
 ### [Schema Management](schema-builders.md)
+
 - **[TableBuilder](schema-builders.md#tablebuilder)** - CREATE and ALTER table operations
 - **[ColumnDefinition](schema-builders.md#columndefinition)** - Column types, constraints, and properties
 - **[JoinBuilder](schema-builders.md#joinbuilder)** - JOIN operations with conditions
 - **[Timestamp Management](schema-builders.md#timestamp-management)** - Automatic timestamp triggers and column management
+- **[Index Management](schema-builders.md#index-operations)** - Single and composite indexes for query optimization
 - Foreign keys and unique constraints
 
 ### [Raw SQL](raw-statements.md)
+
 - **[Raw Statements](raw-statements.md)** - Custom SQL expressions with parameter binding
 - Integration with QueryBuilder and Criteria
 - Safe parameter binding practices
 
 ### [Architecture](contracts.md)
+
 - **[Contracts](contracts.md)** - Interfaces defining component behavior
 - **[BuildHandler](build-handler.md)** - Base class for query builders
 - Extensibility and customization points
 
 ### [Release Process](release-process.md)
+
 - **[Automated Tagging](release-process.md)** - GitHub Actions workflow for releases
 - **[Semantic Versioning](release-process.md#semantic-versioning)** - Version management strategy
 - **[CI/CD Integration](release-process.md#cicd-integration)** - Continuous integration and deployment
@@ -75,24 +79,25 @@ $users = UserRepository::create()
 ```php
 class BetweenDates implements CriteriaInterface
 {
-    public function apply(QueryBuilder $queryBuilder)
-    {
-        $queryBuilder->where('created_at', '>=', $this->startDate)
-                     ->where('created_at', '<=', $this->endDate);
-    }
+  public function apply(QueryBuilder $queryBuilder)
+  {
+    $queryBuilder
+      ->where('created_at', '>=', $this->startDate)
+      ->where('created_at', '<=', $this->endDate);
+  }
 }
 ```
 
 ### Complex Queries
 
 ```php
-$repository->useQueryBuilder(function(QueryBuilder $qb) {
-    $qb->leftJoin('categories')
-       ->on('products.category_id', '=', 'categories.id')
-       ->whereGroup(function($qb) {
-           $qb->where('status', '=', 'active')
-              ->where('featured', '=', true, 'OR');
-       });
+$repository->useQueryBuilder(function (QueryBuilder $qb) {
+  $qb
+    ->leftJoin('categories')
+    ->on('products.category_id', '=', 'categories.id')
+    ->whereGroup(function ($qb) {
+      $qb->where('status', '=', 'active')->where('featured', '=', true, 'OR');
+    });
 });
 ```
 
@@ -100,16 +105,21 @@ $repository->useQueryBuilder(function(QueryBuilder $qb) {
 
 ```php
 QueryBuilder::create()
-    ->table('users')
-    ->create(function(TableBuilder $table) {
-        $table->addColumn('id', 'int')->primaryKey();
-        $table->addColumn('email', 'varchar')->length(255);
-        $table->addForeignKey('role_id', 'roles');
-        $table->addUnique('email');
-        
-        // Add automatic timestamp management
-        $table->timestamps();
-    });
+  ->table('users')
+  ->create(function (TableBuilder $table) {
+    $table->addColumn('id', 'int')->primaryKey();
+    $table->addColumn('email', 'varchar')->length(255);
+    $table->addColumn('status', 'varchar')->length(20);
+    $table->addForeignKey('role_id', 'roles');
+    $table->addUnique('email');
+
+    // Add indexes for better query performance
+    $table->addIndex('status');
+    $table->addIndex(['role_id', 'status']);
+
+    // Add automatic timestamp management
+    $table->timestamps();
+  });
 ```
 
 ## Installation
