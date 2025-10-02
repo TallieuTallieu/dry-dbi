@@ -1,28 +1,33 @@
 {
-    "name": "tallieutallieu/dry-dbi",
-    "description": "Improved DRY databases",
-    "type": "library",
-    "license": "proprietary",
-    "require": {
-        "php": "^8.2",
-        "tallieutallieu/oak": "^3.0.8"
-    },
-    "autoload": {
-        "psr-4": {
-            "Tnt\\Dbi\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
-        }
-    },
-    "require-dev": {
-        "pestphp/pest": "^3.8"
-    },
-    "config": {
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
+  "name": "tallieutallieu/dry-dbi",
+  "description": "Improved DRY databases",
+  "type": "library",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.2",
+    "tallieutallieu/oak": "^3.0.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tnt\\Dbi\\": "src/"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "require-dev": {
+    "pestphp/pest": "^3.8",
+    "phpstan/phpstan": "^2.1"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "scripts": {
+    "phpstan": "phpstan analyse --memory-limit=512M",
+    "phpstan:baseline": "phpstan analyse --memory-limit=512M --generate-baseline"
+  }
 }

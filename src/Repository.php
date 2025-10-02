@@ -5,23 +5,26 @@ namespace Tnt\Dbi;
 use Tnt\Dbi\Contracts\CriteriaCollectionInterface;
 use Tnt\Dbi\Contracts\CriteriaInterface;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract class Repository
 {
     /**
      * @var string
      */
-    protected $model;
+    protected string $model = '';
 
     /**
      * @var CriteriaCollectionInterface
      */
-    private $criteria;
+    private CriteriaCollectionInterface $criteria;
 
     /**
      * Holds callables that directly use the Query Builder
-     * @var array
+     * @var array<int, callable(QueryBuilder): void>
      */
-    private $queryBuilderUses = [];
+    private array $queryBuilderUses = [];
 
     /**
      * Repository constructor.
@@ -32,24 +35,25 @@ abstract class Repository
         $this->criteria = $criteria;
         $this->init();
     }
-    
+
     /**
      * Create a new repository
      * @return static
      */
-    static function create() {
+    static function create()
+    {
         return new static(new CriteriaCollection());
     }
 
     /**
      * Called upon repository creation
      */
-    protected function init() {}
+    protected function init(): void {}
 
     /**
      * @param CriteriaInterface $criteria
      */
-    protected function addCriteria(CriteriaInterface $criteria)
+    protected function addCriteria(CriteriaInterface $criteria): void
     {
         $this->criteria->addCriteria($criteria);
     }
@@ -58,7 +62,7 @@ abstract class Repository
      * Applies all criteria to the query
      * @param QueryBuilder $queryBuilder
      */
-    private function applyCriteria(QueryBuilder $queryBuilder)
+    private function applyCriteria(QueryBuilder $queryBuilder): void
     {
         $criteria = $this->criteria->getCriteria();
 
@@ -69,9 +73,9 @@ abstract class Repository
 
     /**
      * Registers a direct use of the Query Builder
-     * @param callable $call
+     * @param callable(QueryBuilder): void $call
      */
-    protected function useQueryBuilder(callable $call)
+    protected function useQueryBuilder(callable $call): void
     {
         $this->queryBuilderUses[] = $call;
     }
@@ -80,7 +84,7 @@ abstract class Repository
      * Calls all direct uses of the Query Builder
      * @param QueryBuilder $queryBuilder
      */
-    private function applyQueryBuilderUses(QueryBuilder $queryBuilder)
+    private function applyQueryBuilderUses(QueryBuilder $queryBuilder): void
     {
         foreach ($this->queryBuilderUses as $use) {
             $use($queryBuilder);
@@ -94,7 +98,7 @@ abstract class Repository
     private function createQueryBuilder(): QueryBuilder
     {
         $queryBuilder = new QueryBuilder();
-        $queryBuilder->table(($this->model)::TABLE);
+        $queryBuilder->table($this->model::TABLE);
         $this->applyCriteria($queryBuilder);
         $this->applyQueryBuilderUses($queryBuilder);
         return $queryBuilder;
@@ -128,7 +132,7 @@ abstract class Repository
     /**
      * Gets the query and all of its parameters as an array starting with the query, followed by the params
      * @param QueryBuilder $queryBuilder
-     * @return array
+     * @return array<int, mixed>
      */
     private function getQuery(QueryBuilder $queryBuilder): array
     {
@@ -149,7 +153,10 @@ abstract class Repository
      */
     private function fetchOne(QueryBuilder $queryBuilder)
     {
-        return call_user_func_array([$this->model, 'query_row'], $this->getQuery($queryBuilder));
+        return call_user_func_array(
+            [$this->model, 'query_row'],
+            $this->getQuery($queryBuilder)
+        );
     }
 
     /**
@@ -159,6 +166,9 @@ abstract class Repository
      */
     private function fetchAll(QueryBuilder $queryBuilder)
     {
-        return call_user_func_array([$this->model, 'query'], $this->getQuery($queryBuilder));
+        return call_user_func_array(
+            [$this->model, 'query'],
+            $this->getQuery($queryBuilder)
+        );
     }
 }

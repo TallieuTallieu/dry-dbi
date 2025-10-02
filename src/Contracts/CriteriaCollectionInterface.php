@@ -4,13 +4,13 @@ namespace Tnt\Dbi\Contracts;
 
 interface CriteriaCollectionInterface
 {
-	/**
-	 * @param CriteriaInterface $criteria
-	 */
-	public function addCriteria(CriteriaInterface $criteria);
+    /**
+     * @param CriteriaInterface $criteria
+     */
+    public function addCriteria(CriteriaInterface $criteria): void;
 
-	/**
-	 * @return array
-	 */
-	public function getCriteria(): array;
+    /**
+     * @return array<int, CriteriaInterface>
+     */
+    public function getCriteria(): array;
 }

@@ -8,25 +8,25 @@ use Tnt\Dbi\Raw;
 
 class IsFalse implements CriteriaInterface
 {
-	/**
-	 * @var string
-	 */
-	private $column;
+    /**
+     * @var string
+     */
+    private string $column;
 
-	/**
-	 * IsFalse constructor.
-	 * @param mixed $column
-	 */
-	public function __construct($column)
-	{
-		$this->column = $column;
-	}
+    /**
+     * IsFalse constructor.
+     * @param string $column
+     */
+    public function __construct(string $column)
+    {
+        $this->column = $column;
+    }
 
-	/**
-	 * @param QueryBuilder $queryBuilder
-	 */
-	public function apply(QueryBuilder $queryBuilder)
-	{
-		$queryBuilder->where($this->column, 'IS', new Raw('FALSE'));
-	}
+    /**
+     * @param QueryBuilder $queryBuilder
+     */
+    public function apply(QueryBuilder $queryBuilder): void
+    {
+        $queryBuilder->where($this->column, 'IS', new Raw('FALSE'));
+    }
 }

@@ -7,29 +7,32 @@ use Tnt\Dbi\QueryBuilder;
 
 class LessThanOrEqual implements CriteriaInterface
 {
-	/**
-	 * @var string
-	 */
-	private $column;
+    /**
+     * @var string
+     */
+    private string $column;
 
-	private $value;
+    /**
+     * @var mixed
+     */
+    private mixed $value;
 
-	/**
-	 * LessThanOrEqual constructor.
-	 * @param mixed $column
-	 * @param $value
-	 */
-	public function __construct($column, $value)
-	{
-		$this->column = $column;
-		$this->value = $value;
-	}
+    /**
+     * LessThanOrEqual constructor.
+     * @param string $column
+     * @param mixed $value
+     */
+    public function __construct(string $column, mixed $value)
+    {
+        $this->column = $column;
+        $this->value = $value;
+    }
 
-	/**
-	 * @param QueryBuilder $queryBuilder
-	 */
-	public function apply(QueryBuilder $queryBuilder)
-	{
-		$queryBuilder->where($this->column, '<=', $this->value);
-	}
+    /**
+     * @param QueryBuilder $queryBuilder
+     */
+    public function apply(QueryBuilder $queryBuilder): void
+    {
+        $queryBuilder->where($this->column, '<=', $this->value);
+    }
 }

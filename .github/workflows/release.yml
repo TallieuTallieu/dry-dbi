@@ -131,21 +131,20 @@ jobs:
           LATEST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
 
           if [ -n "$LATEST_TAG" ]; then
-            echo "## Changes since $LATEST_TAG" > CHANGELOG.md
+            echo "### Changes since $LATEST_TAG" > CHANGELOG.md
             echo "" >> CHANGELOG.md
             git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD >> CHANGELOG.md
           else
-            echo "## Initial Release" > CHANGELOG.md
+            echo "### Initial Release" > CHANGELOG.md
             echo "" >> CHANGELOG.md
             echo "This is the first tagged release of dry-dbi." >> CHANGELOG.md
           fi
 
-          echo "" >> CHANGELOG.md
-          echo "## Installation" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          echo '```bash' >> CHANGELOG.md
-          echo "composer require tallieutallieu/dry-dbi:^${{ steps.version.outputs.new_version }}" >> CHANGELOG.md
-          echo '```' >> CHANGELOG.md
+          # Read the changelog content and set it as output
+          CHANGELOG_CONTENT=$(cat CHANGELOG.md)
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG_CONTENT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         if: steps.should-release.outputs.should_release == 'true'
@@ -158,8 +157,7 @@ jobs:
 
             **Version bump**: ${{ steps.version.outputs.old_version }} → ${{ steps.version.outputs.new_version }} (${{ steps.version-type.outputs.version_type }})
 
-            ### Changes
-            $(cat CHANGELOG.md)
+            ${{ steps.changelog.outputs.changelog }}
 
             ### Installation
 

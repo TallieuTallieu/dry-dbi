@@ -2,69 +2,72 @@
 
 namespace Tnt\Dbi;
 
+use Tnt\Dbi\Contracts\StatementInterface;
+
 class QueryBuilder extends BuildHandler
 {
     /**
-     * @var callable $create
+     * @var callable(TableBuilder): void|null
      */
-    private $create;
+    private $create = null;
 
     /**
-     * @var callable $alter
+     * @var callable(TableBuilder): void|null
      */
-    private $alter;
+    private $alter = null;
 
     /**
-     * @var $drop
+     * @var bool
      */
-    private $drop;
+    private bool $drop = false;
 
     /**
-     * @var array $select
+     * @var array<int, StatementInterface>
      */
-    private $select = [];
+    private array $select = [];
 
     /**
-     * @var array
+     * @var array<int, JoinBuilder>
      */
-    private $joins = [];
+    private array $joins = [];
 
     /**
-     * @var array
+     * @var array<int, array<int, mixed>>
      */
-    private $where = [];
+    private array $where = [];
 
     /**
-     * @var bool $isGroupingMode
+     * @var bool
      */
-    private $isGroupingMode = false;
+    private bool $isGroupingMode = false;
 
     /**
-     * @var array
+     * @var array<int, array{0: StatementInterface, 1: string}>
      */
-    private $orderBy = [];
+    private array $orderBy = [];
 
     /**
-     * @var array
+     * @var array<int, StatementInterface>
      */
-    private $groupBy = [];
+    private array $groupBy = [];
 
     /**
-     * @var array
+     * @var array<int, array<int, mixed>>
      */
-    private $having = [];
+    private array $having = [];
 
     /**
-     * @var int
+     * @var StatementInterface|null
      */
-    private $limit;
+    private ?StatementInterface $limit = null;
 
     /**
-     * @var
+     * @var StatementInterface|null
      */
-    private $offset;
+    private ?StatementInterface $offset = null;
 
     /**
+     * @param callable(TableBuilder): void $createScheme
      * @return $this
      */
     public function create(callable $createScheme): QueryBuilder
@@ -74,6 +77,7 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
+     * @param callable(TableBuilder): void $alterScheme
      * @return $this
      */
     public function alter(callable $alterScheme): QueryBuilder
@@ -92,47 +96,56 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
-     * @param $column
+     * @param string|Raw $column
      * @return QueryBuilder
      */
-    public function select($column): QueryBuilder
+    public function select(string|Raw $column): QueryBuilder
     {
         $this->select[] = $this->createStatement($column, true);
         return $this;
     }
 
     /**
-     * @param null $table
+     * @param string|null $table
      * @return QueryBuilder
      */
-    public function selectAll($table = null): QueryBuilder
+    public function selectAll(?string $table = null): QueryBuilder
     {
-        $this->select(new Raw($this->quote($table ?: $this->getTable()).'.*'));
+        $this->select(
+            new Raw($this->quote($table ?: $this->getTable()) . '.*')
+        );
         return $this;
     }
 
     /**
-     * @param $statement
+     * @param string|Raw $statement
      * @param string $alias
      * @return QueryBuilder
      */
-    public function selectAs($statement, string $alias): QueryBuilder
+    public function selectAs(string|Raw $statement, string $alias): QueryBuilder
     {
         $statement = $this->createStatement($statement, true);
-        $aliasStatement = new Raw($statement->getValue().' AS '.$alias, $statement->getBindings());
+        $aliasStatement = new Raw(
+            $statement->getValue() . ' AS ' . $alias,
+            $statement->getBindings()
+        );
         $this->select($aliasStatement);
         return $this;
     }
 
     /**
-     * @param $field
+     * @param string|Raw $field
      * @param string $operator
-     * @param $value
-     * @param $connectBefore
+     * @param mixed $value
+     * @param string $connectBefore
      * @return QueryBuilder
      */
-    public function where($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
-    {
+    public function where(
+        string|Raw $field,
+        string $operator,
+        mixed $value,
+        string $connectBefore = 'AND'
+    ): QueryBuilder {
         $whereStatement = [
             $this->createStatement($field, true),
             $operator,
@@ -140,8 +153,15 @@ class QueryBuilder extends BuildHandler
             $connectBefore,
         ];
 
-        if ($this->isGroupingMode) {
-            $this->where[count($this->where)-1][0][] = $whereStatement;
+        if ($this->isGroupingMode && count($this->where) > 0) {
+            $lastIndex = count($this->where) - 1;
+            if (
+                is_array($this->where[$lastIndex]) &&
+                isset($this->where[$lastIndex][0]) &&
+                is_array($this->where[$lastIndex][0])
+            ) {
+                $this->where[$lastIndex][0][] = $whereStatement;
+            }
             return $this;
         }
 
@@ -150,31 +170,34 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
-     * @param callable $call
-     * @param $connectBefore
+     * @param callable(QueryBuilder): void $call
+     * @param string $connectBefore
      */
-    public function whereGroup(callable $call, string $connectBefore = 'AND')
-    {
+    public function whereGroup(
+        callable $call,
+        string $connectBefore = 'AND'
+    ): void {
         $this->isGroupingMode = true;
 
-        $this->where[] = [
-            [],
-            $connectBefore,
-        ];
+        $this->where[] = [[], $connectBefore];
 
-        call_user_func_array($call, [$this, ]);
+        call_user_func_array($call, [$this]);
         $this->isGroupingMode = false;
     }
 
     /**
-     * @param $field
+     * @param string|Raw $field
      * @param string $operator
-     * @param $value
-     * @param $connectBefore
+     * @param mixed $value
+     * @param string $connectBefore
      * @return QueryBuilder
      */
-    public function having($field, string $operator, $value, string $connectBefore = 'AND'): QueryBuilder
-    {
+    public function having(
+        string|Raw $field,
+        string $operator,
+        mixed $value,
+        string $connectBefore = 'AND'
+    ): QueryBuilder {
         $havingStatement = [
             $this->createStatement($field, true),
             $operator,
@@ -182,8 +205,15 @@ class QueryBuilder extends BuildHandler
             $connectBefore,
         ];
 
-        if ($this->isGroupingMode) {
-            $this->having[count($this->having)-1][0][] = $havingStatement;
+        if ($this->isGroupingMode && count($this->having) > 0) {
+            $lastIndex = count($this->having) - 1;
+            if (
+                is_array($this->having[$lastIndex]) &&
+                isset($this->having[$lastIndex][0]) &&
+                is_array($this->having[$lastIndex][0])
+            ) {
+                $this->having[$lastIndex][0][] = $havingStatement;
+            }
             return $this;
         }
 
@@ -192,64 +222,67 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
-     * @param callable $call
-     * @param $connectBefore
+     * @param callable(QueryBuilder): void $call
+     * @param string $connectBefore
      */
-    public function havingGroup(callable $call, string $connectBefore = 'AND')
-    {
+    public function havingGroup(
+        callable $call,
+        string $connectBefore = 'AND'
+    ): void {
         $this->isGroupingMode = true;
 
-        $this->having[] = [
-            [],
-            $connectBefore,
-        ];
+        $this->having[] = [[], $connectBefore];
 
-        call_user_func_array($call, [$this, ]);
+        call_user_func_array($call, [$this]);
         $this->isGroupingMode = false;
     }
 
     /**
-     * @param $column
+     * @param string|Raw $column
      * @param string $sortMethod
      * @return QueryBuilder
      */
-    public function orderBy($column, string $sortMethod = 'ASC'): QueryBuilder
-    {
+    public function orderBy(
+        string|Raw $column,
+        string $sortMethod = 'ASC'
+    ): QueryBuilder {
         $field = $this->createStatement($column, true);
 
-        $this->orderBy = array_filter($this->orderBy, function($value) use($field) {
-            return ($value[0]->getValue() !== $field->getValue());
+        $this->orderBy = array_filter($this->orderBy, function ($value) use (
+            $field
+        ) {
+            return $value[0]->getValue() !== $field->getValue();
         });
 
-        $this->orderBy[] = [$field, $sortMethod,];
+        $this->orderBy[] = [$field, $sortMethod];
         return $this;
     }
 
     /**
-     * @param $column
+     * @param string|Raw $column
      * @return QueryBuilder
      */
-    public function groupBy($column): QueryBuilder
+    public function groupBy(string|Raw $column): QueryBuilder
     {
         $this->groupBy[] = $this->createStatement($column, true);
         return $this;
     }
 
     /**
-     * @param $limit
+     * @param int|Raw $limit
      * @return QueryBuilder
      */
-    public function limit($limit): QueryBuilder
+    public function limit(int|Raw $limit): QueryBuilder
     {
         $this->limit = $this->createStatement($limit);
         return $this;
     }
 
     /**
-     * @param $offset
+     * @param int|Raw $offset
      * @return QueryBuilder
      */
-    public function offset($offset): QueryBuilder
+    public function offset(int|Raw $offset): QueryBuilder
     {
         $this->offset = $this->createStatement($offset);
         return $this;
@@ -306,14 +339,16 @@ class QueryBuilder extends BuildHandler
      * @param BuildHandler $buildHandler
      * @param string $connector
      */
-    private function buildHandler(BuildHandler $buildHandler, string $connector = ' ')
-    {
+    private function buildHandler(
+        BuildHandler $buildHandler,
+        string $connector = ' '
+    ): void {
         $buildHandler->build();
 
         $query = $buildHandler->getQuery();
         $params = $buildHandler->getParameters();
 
-        $this->addToQuery($connector.$query);
+        $this->addToQuery($connector . $query);
 
         foreach ($params as $param) {
             $this->addParameter($param);
@@ -323,7 +358,7 @@ class QueryBuilder extends BuildHandler
     /**
      *
      */
-    private function buildJoins()
+    private function buildJoins(): void
     {
         foreach ($this->joins as $join) {
             $this->buildHandler($join);
@@ -333,43 +368,43 @@ class QueryBuilder extends BuildHandler
     /**
      *
      */
-    private function buildWhere()
+    private function buildWhere(): void
     {
         $this->buildConditions($this->where, 'WHERE');
     }
 
-    private function buildConditions(array $statements, string $keyword)
+    /**
+     * @param array<int, mixed> $statements
+     * @param string $keyword
+     */
+    private function buildConditions(array $statements, string $keyword): void
     {
         if (!count($statements)) {
             return;
         }
 
-        $this->addToQuery(' '.$keyword.' ');
+        $this->addToQuery(' ' . $keyword . ' ');
 
         $i = 0;
         foreach ($statements as $statement) {
-
-            $isGroup = (is_array($statement[0]));
+            $isGroup = is_array($statement[0]);
 
             if ($isGroup) {
-
                 if ($i !== 0) {
-                    $this->addToQuery(' '.$statement[1].' ');
+                    $this->addToQuery(' ' . $statement[1] . ' ');
                 }
 
                 $this->addToQuery(' ( ');
 
                 $j = 0;
                 foreach ($statement[0] as $subStatement) {
-                    $this->buildCondition($subStatement, ($j === 0));
+                    $this->buildCondition($subStatement, $j === 0);
                     $j++;
                 }
 
                 $this->addToQuery(' ) ');
-
             } else {
-
-                $this->buildCondition($statement, ($i === 0));
+                $this->buildCondition($statement, $i === 0);
             }
 
             $i++;
@@ -377,20 +412,24 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
-     * @param array $statement
+     * @param array<int, mixed> $statement
      * @param bool $isFirst
      */
-    private function buildCondition(array $statement, bool $isFirst = true)
-    {
+    private function buildCondition(
+        array $statement,
+        bool $isFirst = true
+    ): void {
         $column = $statement[0];
         $operator = $statement[1];
         $value = $statement[2];
 
-        if (! $isFirst) {
-            $this->addToQuery(' '.$statement[3].' ');
+        if (!$isFirst) {
+            $this->addToQuery(' ' . $statement[3] . ' ');
         }
 
-        $this->addToQuery($column->getValue().' '.$operator.' '.$value->getValue());
+        $this->addToQuery(
+            $column->getValue() . ' ' . $operator . ' ' . $value->getValue()
+        );
         $this->addParameters($column->getBindings());
         $this->addParameters($value->getBindings());
     }
@@ -398,7 +437,7 @@ class QueryBuilder extends BuildHandler
     /**
      *
      */
-    private function buildSelect()
+    private function buildSelect(): void
     {
         $selectStatement = [];
 
@@ -407,37 +446,40 @@ class QueryBuilder extends BuildHandler
             $this->addParameters($select->getBindings());
         }
 
-        $this->addToQuery('SELECT '.implode(', ', $selectStatement).' FROM '.$this->quote($this->getTable()));
+        $this->addToQuery(
+            'SELECT ' .
+                implode(', ', $selectStatement) .
+                ' FROM ' .
+                $this->quote($this->getTable())
+        );
     }
 
     /**
      *
      */
-    private function buildOrderBy()
+    private function buildOrderBy(): void
     {
         if (count($this->orderBy)) {
-
             $orderByStatements = [];
 
             foreach ($this->orderBy as $orderBy) {
-
                 $orderByStatement = $orderBy[0];
 
-                $orderByStatements[] = $orderByStatement->getValue().' '.$orderBy[1];
+                $orderByStatements[] =
+                    $orderByStatement->getValue() . ' ' . $orderBy[1];
                 $this->addParameters($orderByStatement->getBindings());
             }
 
-            $this->addToQuery(' ORDER BY '.implode(', ', $orderByStatements));
+            $this->addToQuery(' ORDER BY ' . implode(', ', $orderByStatements));
         }
     }
 
     /**
      *
      */
-    private function buildGroupBy()
+    private function buildGroupBy(): void
     {
         if (count($this->groupBy)) {
-
             $groupByStatements = [];
 
             foreach ($this->groupBy as $groupBy) {
@@ -445,14 +487,14 @@ class QueryBuilder extends BuildHandler
                 $this->addParameters($groupBy->getBindings());
             }
 
-            $this->addToQuery(' GROUP BY '.implode(', ', $groupByStatements));
+            $this->addToQuery(' GROUP BY ' . implode(', ', $groupByStatements));
         }
     }
 
     /**
      *
      */
-    private function buildHaving()
+    private function buildHaving(): void
     {
         $this->buildConditions($this->having, 'HAVING');
     }
@@ -460,16 +502,17 @@ class QueryBuilder extends BuildHandler
     /**
      *
      */
-    private function buildLimitOffset()
+    private function buildLimitOffset(): void
     {
-        if ($this->limit) {
+        $limit = $this->limit;
+        if ($limit !== null) {
+            $this->addToQuery(' LIMIT ' . $limit->getValue());
+            $this->addParameters($limit->getBindings());
 
-            $this->addToQuery(' LIMIT '.$this->limit->getValue());
-            $this->addParameters($this->limit->getBindings());
-
-            if ($this->offset) {
-                $this->addToQuery(' OFFSET '.$this->offset->getValue());
-                $this->addParameters($this->offset->getBindings());
+            $offset = $this->offset;
+            if ($offset !== null) {
+                $this->addToQuery(' OFFSET ' . $offset->getValue());
+                $this->addParameters($offset->getBindings());
             }
         }
     }
@@ -477,79 +520,78 @@ class QueryBuilder extends BuildHandler
     /**
      *
      */
-    private function buildCreate()
+    private function buildCreate(): void
     {
         $tableBuilder = new TableBuilder();
         $tableBuilder->table($this->getTable());
         call_user_func($this->create, $tableBuilder);
         $tableBuilder->build();
 
-        $this->addToQuery('CREATE TABLE '.$this->quote($this->getTable()));
-        $this->addToQuery(' ('.$tableBuilder->getQuery().')');
+        $this->addToQuery('CREATE TABLE ' . $this->quote($this->getTable()));
+        $this->addToQuery(' (' . $tableBuilder->getQuery() . ')');
         $this->addToQuery(' COLLATE \'utf8_unicode_ci\'');
     }
 
     /**
      *
      */
-    private function buildAlter()
+    private function buildAlter(): void
     {
         $tableBuilder = new TableBuilder(true);
         $tableBuilder->table($this->getTable());
         call_user_func($this->alter, $tableBuilder);
         $tableBuilder->build();
 
-        $this->addToQuery('ALTER TABLE '.$this->quote($this->getTable()));
-        $this->addToQuery(' '.$tableBuilder->getQuery());
+        $this->addToQuery('ALTER TABLE ' . $this->quote($this->getTable()));
+        $this->addToQuery(' ' . $tableBuilder->getQuery());
     }
 
     /**
      *
      */
-    private function buildDrop()
+    private function buildDrop(): void
     {
-        $this->addToQuery('DROP TABLE '.$this->quote($this->getTable()));
+        $this->addToQuery('DROP TABLE ' . $this->quote($this->getTable()));
     }
 
     /**
      * @return bool
      */
-    private function isSelectQuery()
+    private function isSelectQuery(): bool
     {
-        return (count($this->select));
+        return count($this->select) > 0;
     }
 
     /**
      * @return bool
      */
-    private function isCreateQuery()
+    private function isCreateQuery(): bool
     {
-        return (bool) $this->create;
+        return $this->create !== null;
     }
 
     /**
      * @return bool
      */
-    private function isAlterQuery()
+    private function isAlterQuery(): bool
     {
-        return (bool) $this->alter;
+        return $this->alter !== null;
     }
 
     /**
      * @return bool
      */
-    private function isDropQuery()
+    private function isDropQuery(): bool
     {
-        return (bool) $this->drop;
+        return $this->drop;
     }
 
     /**
-     * @return mixed|void
+     * @return void
      */
-    public function build()
+    public function build(): void
     {
         if ($this->isSelectQuery()) {
-
             $this->buildSelect();
             $this->buildJoins();
             $this->buildWhere();

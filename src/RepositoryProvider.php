@@ -16,7 +16,10 @@ class RepositoryProvider extends ServiceProvider
 
     public function register(ContainerInterface $app)
     {
-        $app->set(CriteriaCollectionInterface::class, CriteriaCollection::class);
+        $app->set(
+            CriteriaCollectionInterface::class,
+            CriteriaCollection::class
+        );
         $app->set(RepositoryInterface::class, BaseRepository::class);
         $app->set(QueryBuilder::class, QueryBuilder::class);
     }

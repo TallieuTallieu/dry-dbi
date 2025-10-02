@@ -5,20 +5,20 @@ namespace Tnt\Dbi;
 class IndexDefinition
 {
     /**
-     * @var array $columns
+     * @var array<int, string>
      */
-    private $columns;
+    private array $columns;
 
     /**
-     * @var string $identifierName
+     * @var string|null
      */
-    private $identifierName;
+    private ?string $identifierName = null;
 
     /**
      * IndexDefinition constructor.
-     * @param string|array $columns
+     * @param string|array<int, string> $columns
      */
-    public function __construct($columns)
+    public function __construct(string|array $columns)
     {
         $this->columns = is_array($columns) ? $columns : [$columns];
     }
@@ -46,7 +46,7 @@ class IndexDefinition
     }
 
     /**
-     * @return array
+     * @return array<int, string>
      */
     public function getColumns(): array
     {

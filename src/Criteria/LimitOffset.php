@@ -7,36 +7,36 @@ use Tnt\Dbi\QueryBuilder;
 
 class LimitOffset implements CriteriaInterface
 {
-	/**
-	 * @var int
-	 */
-	private $limit;
+    /**
+     * @var int
+     */
+    private int $limit;
 
-	/**
-	 * @var int
-	 */
-	private $offset;
+    /**
+     * @var int
+     */
+    private int $offset;
 
-	/**
-	 * LimitOffset constructor.
-	 * @param int $limit
-	 * @param int $offset
-	 */
-	public function __construct(int $limit, int $offset = 0)
-	{
-		$this->limit = $limit;
-		$this->offset = $offset;
-	}
+    /**
+     * LimitOffset constructor.
+     * @param int $limit
+     * @param int $offset
+     */
+    public function __construct(int $limit, int $offset = 0)
+    {
+        $this->limit = $limit;
+        $this->offset = $offset;
+    }
 
-	/**
-	 * @param QueryBuilder $queryBuilder
-	 */
-	public function apply(QueryBuilder $queryBuilder)
-	{
-		$queryBuilder->limit($this->limit);
+    /**
+     * @param QueryBuilder $queryBuilder
+     */
+    public function apply(QueryBuilder $queryBuilder): void
+    {
+        $queryBuilder->limit($this->limit);
 
-		if ($this->offset) {
-			$queryBuilder->offset($this->offset);
-		}
-	}
+        if ($this->offset) {
+            $queryBuilder->offset($this->offset);
+        }
+    }
 }

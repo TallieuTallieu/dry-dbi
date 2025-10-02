@@ -13,24 +13,36 @@ use Tnt\Dbi\QueryBuilder;
 class MockModel {
     const TABLE = 'users';
     
-    public static $lastQuery = null;
-    public static $lastParams = [];
-    public static $queryResult = [];
-    public static $queryRowResult = null;
+    public static ?string $lastQuery = null;
+    /** @var array<int, mixed> */
+    public static array $lastParams = [];
+    /** @var array<int, mixed> */
+    public static array $queryResult = [];
+    public static mixed $queryRowResult = null;
     
-    public static function query($query, ...$params) {
+    /**
+     * @param string $query
+     * @param mixed ...$params
+     * @return array<int, mixed>
+     */
+    public static function query(string $query, mixed ...$params): array {
         self::$lastQuery = $query;
         self::$lastParams = $params;
         return self::$queryResult;
     }
     
-    public static function query_row($query, ...$params) {
+    /**
+     * @param string $query
+     * @param mixed ...$params
+     * @return mixed
+     */
+    public static function query_row(string $query, mixed ...$params): mixed {
         self::$lastQuery = $query;
         self::$lastParams = $params;
         return self::$queryRowResult;
     }
     
-    public static function reset() {
+    public static function reset(): void {
         self::$lastQuery = null;
         self::$lastParams = [];
         self::$queryResult = [];
@@ -40,12 +52,12 @@ class MockModel {
 
 // Concrete Repository implementation for testing
 class TestRepository extends Repository {
-    protected $model = MockModel::class;
+    protected string $model = MockModel::class;
 }
 
 // Concrete BaseRepository implementation for testing
 class TestBaseRepository extends BaseRepository {
-    protected $model = MockModel::class;
+    protected string $model = MockModel::class;
 }
 
 describe('Repository', function () {

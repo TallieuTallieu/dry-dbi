@@ -8,25 +8,25 @@ use Tnt\Dbi\Raw;
 
 class IsNull implements CriteriaInterface
 {
-	/**
-	 * @var string
-	 */
-	private $column;
+    /**
+     * @var string
+     */
+    private string $column;
 
-	/**
-	 * IsNull constructor.
-	 * @param mixed $column
-	 */
-	public function __construct($column)
-	{
-		$this->column = $column;
-	}
+    /**
+     * IsNull constructor.
+     * @param string $column
+     */
+    public function __construct(string $column)
+    {
+        $this->column = $column;
+    }
 
-	/**
-	 * @param QueryBuilder $queryBuilder
-	 */
-	public function apply(QueryBuilder $queryBuilder)
-	{
-		$queryBuilder->where($this->column, 'IS', new Raw( 'NULL' ));
-	}
+    /**
+     * @param QueryBuilder $queryBuilder
+     */
+    public function apply(QueryBuilder $queryBuilder): void
+    {
+        $queryBuilder->where($this->column, 'IS', new Raw('NULL'));
+    }
 }

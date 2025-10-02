@@ -28,6 +28,10 @@ help:
 	@echo "  test-verbose   - Run tests with verbose output"
 	@echo "  test-coverage  - Run tests with coverage report"
 	@echo ""
+	@echo "$(Yellow)Code Quality:$(NC)"
+	@echo "  phpstan        - Run PHPStan static analysis"
+	@echo "  phpstan-baseline - Generate PHPStan baseline"
+	@echo ""
 	@echo "  help           - Show this help message"
 .PHONY: help
 
@@ -81,4 +85,14 @@ test-verbose: docker
 test-coverage: docker
 	docker compose exec -T dry-dbi-dev ./vendor/bin/pest --coverage
 .PHONY: test-coverage
+
+## CODE QUALITY ##
+
+phpstan: docker
+	docker compose exec -T dry-dbi-dev composer phpstan
+.PHONY: phpstan
+
+phpstan-baseline: docker
+	docker compose exec -T dry-dbi-dev composer phpstan:baseline
+.PHONY: phpstan-baseline
 

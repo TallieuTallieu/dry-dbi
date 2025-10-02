@@ -7,25 +7,25 @@ use Tnt\Dbi\QueryBuilder;
 
 class GroupBy implements CriteriaInterface
 {
-	/**
-	 * @var string
-	 */
-	private $column;
+    /**
+     * @var string
+     */
+    private string $column;
 
-	/**
-	 * GroupBy constructor.
-	 * @param mixed $column
-	 */
-	public function __construct($column)
-	{
-		$this->column = $column;
-	}
+    /**
+     * GroupBy constructor.
+     * @param string $column
+     */
+    public function __construct(string $column)
+    {
+        $this->column = $column;
+    }
 
-	/**
-	 * @param QueryBuilder $queryBuilder
-	 */
-	public function apply(QueryBuilder $queryBuilder)
-	{
-		$queryBuilder->groupBy($this->column);
-	}
+    /**
+     * @param QueryBuilder $queryBuilder
+     */
+    public function apply(QueryBuilder $queryBuilder): void
+    {
+        $queryBuilder->groupBy($this->column);
+    }
 }

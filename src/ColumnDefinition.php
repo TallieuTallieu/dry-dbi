@@ -5,49 +5,49 @@ namespace Tnt\Dbi;
 class ColumnDefinition
 {
     /**
-     * @var bool $isAlter
+     * @var bool
      */
-    private $isAlter;
+    private bool $isAlter;
 
     /**
-     * @var string $name
+     * @var string
      */
-    private $name;
+    private string $name;
 
     /**
-     * @var string|null $newName
+     * @var string|null
      */
-    private $newName;
+    private ?string $newName = null;
 
     /**
-     * @var mixed $length
+     * @var int|string|null
      */
-    private $length;
+    private int|string|null $length = null;
 
     /**
-     * @var string $type
+     * @var string
      */
-    private $type;
+    private string $type = '';
 
     /**
-     * @var string $generate
+     * @var string|null
      */
-    private $generateQuery;
+    private ?string $generateQuery = null;
 
     /**
-     * @var bool $null
+     * @var bool
      */
-    private $null;
+    private bool $null = false;
 
     /**
-     * @var mixed $defaultVal
+     * @var mixed
      */
-    private $defaultVal = false;
+    private mixed $defaultVal = false;
 
     /**
-     * @var bool $autoIncrement
+     * @var bool
      */
-    private $autoIncrement = false;
+    private bool $autoIncrement = false;
 
     /**
      * @var bool $primaryKey
@@ -63,7 +63,9 @@ class ColumnDefinition
     public function __construct(string $name, bool $isAlter = false)
     {
         if (empty($name) || !$this->isValidIdentifier($name)) {
-            throw new \InvalidArgumentException('Column name must be a valid identifier');
+            throw new \InvalidArgumentException(
+                'Column name must be a valid identifier'
+            );
         }
         $this->name = $name;
         $this->isAlter = $isAlter;
@@ -101,15 +103,20 @@ class ColumnDefinition
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function rename(string $name, string $type, ?int $length = null): self
-    {
+    public function rename(
+        string $name,
+        string $type,
+        ?int $length = null
+    ): self {
         if (empty($name) || !$this->isValidIdentifier($name)) {
-            throw new \InvalidArgumentException('New column name must be a valid identifier');
+            throw new \InvalidArgumentException(
+                'New column name must be a valid identifier'
+            );
         }
         if (empty($type)) {
             throw new \InvalidArgumentException('Column type cannot be empty');
         }
-        
+
         $this->newName = $name;
         $this->type = $type;
 
@@ -121,10 +128,10 @@ class ColumnDefinition
     }
 
     /**
-     * @param mixed $length
+     * @param int|string $length
      * @return $this
      */
-    public function length($length): self
+    public function length(int|string $length): self
     {
         $this->length = $length;
         return $this;
@@ -194,38 +201,43 @@ class ColumnDefinition
     public function getString(): string
     {
         $statement = [];
-        $statement[] = '`'.$this->name.'`'.($this->isAlter ? ' `'.($this->newName ?: $this->name).'`' : '');
+        $statement[] =
+            '`' .
+            $this->name .
+            '`' .
+            ($this->isAlter
+                ? ' `' . ($this->newName ?: $this->name) . '`'
+                : '');
 
         if ($this->type) {
-
             $type = strtoupper($this->type);
 
-            if ($this->length) {
-                $type .= '('.$this->length.')';
+            if ($this->length !== null) {
+                $type .= '(' . (string) $this->length . ')';
             }
 
             $statement[] = $type;
         }
 
         if ($this->generateQuery) {
-            $generateStatement = 'GENERATED ALWAYS as (' . $this->generateQuery . ')';
+            $generateStatement =
+                'GENERATED ALWAYS as (' . $this->generateQuery . ')';
 
             $statement[] = $generateStatement;
             return implode(' ', $statement);
         }
 
-        $statement[] = ($this->null ? 'NULL' : 'NOT NULL');
+        $statement[] = $this->null ? 'NULL' : 'NOT NULL';
 
         if ($this->defaultVal !== false) {
             if (is_string($this->defaultVal)) {
                 // Use proper SQL escaping by replacing single quotes with doubled quotes
                 $escapedValue = str_replace("'", "''", $this->defaultVal);
                 $statement[] = "DEFAULT '" . $escapedValue . "'";
-            } else if (is_null($this->defaultVal)) {
-                $statement[] = "DEFAULT NULL";
-            }
-            else {
-                $statement[] = "DEFAULT " . $this->defaultVal;
+            } elseif (is_null($this->defaultVal)) {
+                $statement[] = 'DEFAULT NULL';
+            } else {
+                $statement[] = 'DEFAULT ' . (string) $this->defaultVal;
             }
         }
 
@@ -240,4 +252,3 @@ class ColumnDefinition
         return implode(' ', $statement);
     }
 }
-
