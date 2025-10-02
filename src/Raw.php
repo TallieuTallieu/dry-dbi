@@ -9,17 +9,17 @@ class Raw implements StatementInterface
     /**
      * @var string
      */
-    private $value;
+    private string $value;
 
     /**
-     * @var array
+     * @var array<int, mixed>
      */
-    private $bindings;
+    private array $bindings;
 
     /**
      * Raw constructor.
      * @param string $value
-     * @param array $bindings
+     * @param array<int, mixed> $bindings
      */
     public function __construct(string $value, array $bindings = [])
     {
@@ -36,7 +36,7 @@ class Raw implements StatementInterface
     }
 
     /**
-     * @return array
+     * @return array<int, mixed>
      */
     public function getBindings(): array
     {

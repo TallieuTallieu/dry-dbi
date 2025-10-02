@@ -4,13 +4,13 @@ namespace Tnt\Dbi\Contracts;
 
 interface StatementInterface
 {
-	/**
-	 * @return string
-	 */
-	public function getValue(): string;
+    /**
+     * @return string
+     */
+    public function getValue(): string;
 
-	/**
-	 * @return array
-	 */
-	public function getBindings(): array;
+    /**
+     * @return array<int, mixed>
+     */
+    public function getBindings(): array;
 }

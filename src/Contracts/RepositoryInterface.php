@@ -2,7 +2,4 @@
 
 namespace Tnt\Dbi\Contracts;
 
-interface RepositoryInterface
-{
-
-}
+interface RepositoryInterface {}
