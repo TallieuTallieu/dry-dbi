@@ -10,19 +10,19 @@ abstract class BuildHandler
      * The table the BuildHandler works on
      * @var string
      */
-    private $table;
+    private string $table = '';
 
     /**
      * The output query
      * @var string
      */
-    private $query = '';
+    private string $query = '';
 
     /**
      * The output query parameters
-     * @var array
+     * @var array<int, mixed>
      */
-    private $parameters = [];
+    private array $parameters = [];
 
     /**
      * @return mixed
@@ -35,25 +35,27 @@ abstract class BuildHandler
      */
     final protected function quote(string $statement)
     {
-        return '`'.$statement.'`';
+        return '`' . $statement . '`';
     }
 
     /**
-     * @param $statement
+     * @param mixed $statement
      * @param bool $useTablePrefix
      * @return StatementInterface
      */
-    protected function createStatement($statement, $useTablePrefix = false): StatementInterface
-    {
+    protected function createStatement(
+        mixed $statement,
+        bool $useTablePrefix = false
+    ): StatementInterface {
         if ($statement instanceof StatementInterface) {
             return $statement;
         }
 
         if ($useTablePrefix) {
-            return new Raw($this->withTablePrefix($statement));
+            return new Raw($this->withTablePrefix((string) $statement));
         }
 
-        return new Raw('?', [$statement, ]);
+        return new Raw('?', [$statement]);
     }
 
     /**
@@ -71,7 +73,7 @@ abstract class BuildHandler
             $column = $parts[1];
         }
 
-        return $this->quote($table).'.'.$this->quote($column);
+        return $this->quote($table) . '.' . $this->quote($column);
     }
 
     /**
@@ -95,23 +97,23 @@ abstract class BuildHandler
     /**
      * @param string $queryPart
      */
-    final protected function addToQuery(string $queryPart)
+    final protected function addToQuery(string $queryPart): void
     {
         $this->query .= $queryPart;
     }
 
     /**
-     * @param $value
+     * @param mixed $value
      */
-    final protected function addParameter($value)
+    final protected function addParameter(mixed $value): void
     {
         $this->parameters[] = $value;
     }
 
     /**
-     * @param array $values
+     * @param array<int, mixed> $values
      */
-    final protected function addParameters(array $values)
+    final protected function addParameters(array $values): void
     {
         foreach ($values as $value) {
             $this->addParameter($value);
@@ -119,7 +121,7 @@ abstract class BuildHandler
     }
 
     /**
-     * @return array
+     * @return array<int, mixed>
      */
     final public function getParameters(): array
     {

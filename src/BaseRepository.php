@@ -8,14 +8,14 @@ use Tnt\Dbi\Criteria\OrderBy;
 
 class BaseRepository extends Repository implements RepositoryInterface
 {
-    public function amount($amount = 30, $offset = 0)
+    public function amount(int $amount = 30, int $offset = 0): self
     {
         $this->addCriteria(new LimitOffset($amount, $offset));
 
         return $this;
     }
 
-    public function orderBy($column, $order = 'ASC')
+    public function orderBy(string $column, string $order = 'ASC'): self
     {
         $this->addCriteria(new OrderBy($column, $order));
 
