@@ -69,14 +69,14 @@ class TableBuilder extends BuildHandler
     private array $dropTriggers = [];
 
     /**
-     * @var IndexDefinition[] $addIndexes
+     * @var array<int, IndexDefinition>
      */
-    private $addIndexes = [];
+    private array $addIndexes = [];
 
     /**
-     * @var array $dropIndexes
+     * @var array<int, IndexDefinition|string>
      */
-    private $dropIndexes = [];
+    private array $dropIndexes = [];
 
     /**
      * @param string $name
@@ -232,10 +232,10 @@ class TableBuilder extends BuildHandler
     }
 
     /**
-     * @param string|array $columns
+     * @param string|array<int, string> $columns
      * @return IndexDefinition
      */
-    public function addIndex($columns): IndexDefinition
+    public function addIndex(string|array $columns): IndexDefinition
     {
         $index = new IndexDefinition($columns);
         $this->addIndexes[] = $index;
@@ -244,10 +244,10 @@ class TableBuilder extends BuildHandler
     }
 
     /**
-     * @param string|array $columns
+     * @param string|array<int, string> $columns
      * @return IndexDefinition
      */
-    public function dropIndex($columns): IndexDefinition
+    public function dropIndex(string|array $columns): IndexDefinition
     {
         $index = new IndexDefinition($columns);
         $this->dropIndexes[] = $index;
