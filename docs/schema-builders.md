@@ -79,24 +79,42 @@ Removes a column from the table (ALTER TABLE only).
 #### timestamps()
 
 ```php
-public function timestamps(string $createdColumn = 'created', string $updatedColumn = 'updated'): void
+public function timestamps(string $createdColumn = 'created', string $updatedColumn = 'updated', TimestampFormat $format = TimestampFormat::UNIX): void
 ```
 
-Adds automatic timestamp management with MySQL triggers. Creates two TIMESTAMP columns and a trigger to automatically update the updated column on record changes.
+Adds automatic timestamp management with MySQL triggers. Supports both Unix timestamp (INT) and datetime (TIMESTAMP) formats.
 
 ```php
-// Use default column names (created, updated)
+use Tnt\Dbi\Enums\TimestampFormat;
+
+// Use default column names and Unix format (created, updated) - RECOMMENDED
 $table->timestamps();
 
-// Use custom column names
-$table->timestamps('created_on', 'modified_on');
+// Use custom column names with Unix format (default)
+$table->timestamps('created_at', 'updated_at');
+
+// Use datetime/TIMESTAMP format explicitly
+$table->timestamps('created', 'updated', TimestampFormat::DATETIME);
+
+// Use custom column names with datetime format
+$table->timestamps('created_on', 'modified_on', TimestampFormat::DATETIME);
 ```
 
-**Note:** This creates:
+**Unix Format (default - RECOMMENDED):** Creates:
 
-- A `created/created_on` column with `DEFAULT CURRENT_TIMESTAMP`
-- An `updated/modified_on` column with `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
-- A MySQL trigger to automatically update the updated column on UPDATE operations
+- A `created` column with `INT UNSIGNED NOT NULL`
+- An `updated` column with `INT UNSIGNED NOT NULL`
+- Two MySQL triggers:
+  - `{table_name}_created_trigger`: Sets both timestamps on INSERT using `UNIX_TIMESTAMP()`
+  - `{table_name}_updated_trigger`: Updates the updated timestamp on UPDATE using `UNIX_TIMESTAMP()`
+
+**Datetime Format:** Creates:
+
+- A `created` column with `TIMESTAMP NOT NULL`
+- An `updated` column with `TIMESTAMP NOT NULL`
+- Two MySQL triggers:
+  - `{table_name}_created_trigger`: Sets both timestamps on INSERT using `CURRENT_TIMESTAMP`
+  - `{table_name}_updated_trigger`: Updates the updated timestamp on UPDATE using `CURRENT_TIMESTAMP`
 
 #### dropTimestampTrigger()
 
@@ -421,12 +439,15 @@ When you call `timestamps()` on a TableBuilder:
 
 ### Trigger Naming Convention
 
-Auto-generated triggers follow this pattern: `{table_name}_updated_trigger`
+Auto-generated triggers follow this pattern for both Unix and datetime formats:
+
+- `{table_name}_created_trigger` (for INSERT operations)
+- `{table_name}_updated_trigger` (for UPDATE operations)
 
 For example:
 
-- Table `users` → Trigger `users_updated_trigger`
-- Table `blog_posts` → Trigger `blog_posts_updated_trigger`
+- Table `users` → Triggers `users_created_trigger` and `users_updated_trigger`
+- Table `blog_posts` → Triggers `blog_posts_created_trigger` and `blog_posts_updated_trigger`
 
 ### Best Practices
 
@@ -434,6 +455,14 @@ For example:
 - Use custom column names when integrating with existing schemas
 - Always call `dropTimestampTriggers()` before dropping timestamp columns
 - When altering timestamp columns, recreate triggers to ensure consistency
+- **Unix timestamps (default)** are recommended for:
+  - Better performance and storage efficiency (4 bytes vs 8 bytes for TIMESTAMP)
+  - Faster integer comparisons
+  - Easier timezone handling in application code
+- **Datetime format** is better for:
+  - Human-readable timestamps in database queries
+  - Built-in MySQL date functions
+  - Dates beyond 2038 (Unix timestamps are limited to 1970-01-01 to 2038-01-19)
 
 ## Usage Examples
 
@@ -473,7 +502,7 @@ $qb->table('posts')->create(function (TableBuilder $table) {
 });
 ```
 
-### Creating a Table with Custom Timestamp Columns
+### Creating a Table with Timestamps (Unix - Default)
 
 ```php
 $qb->table('posts')->create(function (TableBuilder $table) {
@@ -481,10 +510,37 @@ $qb->table('posts')->create(function (TableBuilder $table) {
   $table->addColumn('title', 'varchar')->length(255)->notNull();
   $table->addColumn('content', 'text');
 
-  // Use custom timestamp column names
-  $table->timestamps('created_on', 'modified_on');
+  // Use default Unix timestamp format (recommended)
+  $table->timestamps('created_at', 'updated_at');
 });
 ```
+
+This creates:
+
+- `created_at INT UNSIGNED NOT NULL`
+- `updated_at INT UNSIGNED NOT NULL`
+- `posts_created_trigger` - Sets both timestamps on INSERT
+- `posts_updated_trigger` - Updates `updated_at` on UPDATE
+
+### Creating a Table with Datetime Timestamps
+
+```php
+$qb->table('legacy_posts')->create(function (TableBuilder $table) {
+  $table->addColumn('id', 'int')->primaryKey();
+  $table->addColumn('title', 'varchar')->length(255)->notNull();
+  $table->addColumn('content', 'text');
+
+  // Use datetime format for human-readable timestamps
+  $table->timestamps('created_on', 'modified_on', 'datetime');
+});
+```
+
+This creates:
+
+- `created_on TIMESTAMP NOT NULL`
+- `modified_on TIMESTAMP NOT NULL`
+- `legacy_posts_created_trigger` - Sets both timestamps on INSERT
+- `legacy_posts_updated_trigger` - Updates `modified_on` on UPDATE
 
 ### Altering a Table
 
@@ -520,6 +576,17 @@ $qb->table('users')->alter(function (TableBuilder $table) {
 $qb->table('posts')->alter(function (TableBuilder $table) {
   $table->dropTimestampTriggers();
   $table->timestamps('date_created', 'date_modified');
+});
+
+// Convert from datetime to Unix timestamp format
+$qb->table('users')->alter(function (TableBuilder $table) {
+  // Drop old datetime columns and triggers
+  $table->dropTimestampTriggers();
+  $table->dropColumn('created');
+  $table->dropColumn('updated');
+
+  // Add new Unix timestamp columns (default format)
+  $table->timestamps('created_at', 'updated_at');
 });
 ```
 
