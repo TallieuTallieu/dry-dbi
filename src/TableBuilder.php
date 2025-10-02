@@ -282,7 +282,7 @@ class TableBuilder extends BuildHandler
 
     /**
      * Add automatic timestamp columns with MySQL triggers
-     * 
+     *
      * @param string $createdColumn The name of the created timestamp column (default: 'created')
      * @param string $updatedColumn The name of the updated timestamp column (default: 'updated')
      * @param TimestampFormat $format The timestamp format: TimestampFormat::UNIX (INT UNSIGNED - default) or TimestampFormat::DATETIME (TIMESTAMP)
@@ -473,10 +473,12 @@ class TableBuilder extends BuildHandler
 
                 // Drop existing triggers
                 $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' . $this->quote($insertTriggerName)
+                    '; DROP TRIGGER IF EXISTS ' .
+                        $this->quote($insertTriggerName)
                 );
                 $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' . $this->quote($updateTriggerName)
+                    '; DROP TRIGGER IF EXISTS ' .
+                        $this->quote($updateTriggerName)
                 );
 
                 // Create INSERT trigger for created timestamp
@@ -486,8 +488,12 @@ class TableBuilder extends BuildHandler
                     ' BEFORE INSERT ON ' .
                     $this->quote($tableName) .
                     ' FOR EACH ROW BEGIN' .
-                    ' SET NEW.' . $this->quote($createdColumn) . ' = UNIX_TIMESTAMP();' .
-                    ' SET NEW.' . $this->quote($updatedColumn) . ' = UNIX_TIMESTAMP();' .
+                    ' SET NEW.' .
+                    $this->quote($createdColumn) .
+                    ' = UNIX_TIMESTAMP();' .
+                    ' SET NEW.' .
+                    $this->quote($updatedColumn) .
+                    ' = UNIX_TIMESTAMP();' .
                     ' END';
 
                 $this->addToQuery($insertTriggerSql);
@@ -510,10 +516,12 @@ class TableBuilder extends BuildHandler
 
                 // Drop existing triggers
                 $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' . $this->quote($insertTriggerName)
+                    '; DROP TRIGGER IF EXISTS ' .
+                        $this->quote($insertTriggerName)
                 );
                 $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' . $this->quote($updateTriggerName)
+                    '; DROP TRIGGER IF EXISTS ' .
+                        $this->quote($updateTriggerName)
                 );
 
                 // Create INSERT trigger for created timestamp
@@ -523,8 +531,12 @@ class TableBuilder extends BuildHandler
                     ' BEFORE INSERT ON ' .
                     $this->quote($tableName) .
                     ' FOR EACH ROW BEGIN' .
-                    ' SET NEW.' . $this->quote($createdColumn) . ' = CURRENT_TIMESTAMP;' .
-                    ' SET NEW.' . $this->quote($updatedColumn) . ' = CURRENT_TIMESTAMP;' .
+                    ' SET NEW.' .
+                    $this->quote($createdColumn) .
+                    ' = CURRENT_TIMESTAMP;' .
+                    ' SET NEW.' .
+                    $this->quote($updatedColumn) .
+                    ' = CURRENT_TIMESTAMP;' .
                     ' END';
 
                 $this->addToQuery($insertTriggerSql);
@@ -558,11 +570,11 @@ class TableBuilder extends BuildHandler
         }
 
         $tableName = $this->getTable();
-        
+
         // Both datetime and unix formats now use two triggers
         return [
             $tableName . '_created_trigger',
-            $tableName . '_updated_trigger'
+            $tableName . '_updated_trigger',
         ];
     }
 }
