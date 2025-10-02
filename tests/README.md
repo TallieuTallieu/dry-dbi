@@ -37,10 +37,23 @@ docker compose exec -T dry-dbi-dev ./vendor/bin/pest --coverage
 
 ## Test Structure
 
-### Test Files
+### Feature Tests
 
-- `Feature/TimestampsTest.php` - Tests for the timestamp functionality (triggers, column creation, cleanup)
-- `Feature/TableBuilderTest.php` - Tests for basic TableBuilder functionality (columns, constraints, foreign keys)
+- `Feature/TableBuilderTest.php` - Comprehensive TableBuilder tests (columns, constraints, foreign keys, indexes)
+- `Feature/TimestampsTest.php` - Timestamp functionality tests (triggers, column creation, cleanup)
+
+### Unit Tests
+
+- `Unit/ColumnDefinitionTest.php` - Column definition and type tests
+- `Unit/CriteriaCollectionTest.php` - Criteria collection management tests
+- `Unit/CriteriaTest.php` - Individual criteria tests (Equals, GreaterThan, In, etc.)
+- `Unit/ForeignKeyDefinitionTest.php` - Foreign key constraint tests
+- `Unit/IndexDefinitionTest.php` - Index definition tests
+- `Unit/JoinBuilderTest.php` - SQL JOIN builder tests
+- `Unit/QueryBuilderTest.php` - Query builder tests (SELECT, WHERE, JOIN, etc.)
+- `Unit/RawTest.php` - Raw SQL statement tests
+- `Unit/RepositoryTest.php` - Repository pattern tests
+- `Unit/UniqueDefinitionTest.php` - Unique constraint tests
 
 ### Adding New Tests
 
@@ -57,26 +70,24 @@ Pest uses a simple, expressive syntax for writing tests. Create new test files i
 use Tnt\Dbi\TableBuilder;
 
 describe('Your Feature', function () {
-    
-    it('does something specific', function () {
-        // Arrange
-        $tableBuilder = new TableBuilder(false);
-        $tableBuilder->table('test_table');
-        
-        // Act
-        $tableBuilder->addColumn('id', 'int')->primaryKey();
-        $tableBuilder->build();
-        
-        // Assert
-        $query = $tableBuilder->getQuery();
-        expect($query)->toContain('`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY');
-    });
+  it('does something specific', function () {
+    // Arrange
+    $tableBuilder = new TableBuilder(false);
+    $tableBuilder->table('test_table');
 
-    it('handles another scenario', function () {
-        // Your test logic here
-        expect(true)->toBe(true);
-    });
+    // Act
+    $tableBuilder->addColumn('id', 'int')->primaryKey();
+    $tableBuilder->build();
 
+    // Assert
+    $query = $tableBuilder->getQuery();
+    expect($query)->toContain('`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY');
+  });
+
+  it('handles another scenario', function () {
+    // Your test logic here
+    expect(true)->toBe(true);
+  });
 });
 ```
 
@@ -91,22 +102,19 @@ describe('Your Feature', function () {
 
 Current test coverage includes:
 
-### Timestamps Functionality
-- ✅ CREATE TABLE with default timestamps (`created_at`, `updated_at`)
-- ✅ CREATE TABLE with custom timestamp columns
-- ✅ ALTER TABLE adding timestamps with trigger creation
-- ✅ ALTER TABLE dropping timestamp triggers and columns
-- ✅ Generated trigger name validation
-- ✅ Complex tables with timestamps and other constraints
-- ✅ Mixed ALTER TABLE operations with timestamps
-- ✅ Timestamp configuration updates
+### Core Components
 
-### Basic TableBuilder Functionality
-- ✅ Basic CREATE TABLE operations
-- ✅ Column types and constraints (varchar, decimal, text, boolean)
-- ✅ Foreign key constraints with CASCADE options
-- ✅ Unique constraints
-- ✅ ALTER TABLE operations (add, change, drop columns)
+- ✅ **TableBuilder** - CREATE/ALTER TABLE operations, columns, constraints, indexes, timestamps
+- ✅ **QueryBuilder** - SELECT, WHERE, JOIN, GROUP BY, ORDER BY, LIMIT/OFFSET
+- ✅ **Repository** - Repository pattern, criteria application, query execution
+- ✅ **Criteria System** - All criteria types (Equals, In, GreaterThan, IsNull, etc.)
+- ✅ **JoinBuilder** - INNER, LEFT, RIGHT JOIN operations
+- ✅ **Column Definitions** - All column types and constraints
+- ✅ **Foreign Keys** - Constraint creation with CASCADE options
+- ✅ **Indexes** - Index creation and management
+- ✅ **Unique Constraints** - Unique constraint definitions
+- ✅ **Raw SQL** - Raw statement handling
+- ✅ **Timestamps** - Automatic timestamp triggers and column management
 
 ## Pest Configuration
 
@@ -146,29 +154,27 @@ The test suite is configured in `tests/Pest.php`:
 
 ## Coverage Report
 
-The test suite includes code coverage reporting via Xdebug. Current coverage highlights:
+The test suite includes code coverage reporting via Xdebug. Run coverage with:
 
-- **TableBuilder: 90.2%** - Comprehensive timestamp and basic functionality tests
-- **ColumnDefinition: 80.7%** - Well covered through TableBuilder integration
-- **ForeignKeyDefinition: 100%** - Fully tested
-- **UniqueDefinition: 100%** - Fully tested
-- **Overall: 30.7%** - Good coverage for tested components
+```bash
+make test-coverage
+# or
+docker compose exec -T dry-dbi-dev ./vendor/bin/pest --coverage
+```
 
 ### Coverage Configuration
 
 Xdebug is configured with coverage mode in `docker/xdebug/xdebug.ini`:
+
 ```ini
 xdebug.mode=develop,debug,coverage
 ```
 
 ## Future Improvements
 
-- Add tests for QueryBuilder and Repository classes (currently 0% coverage)
-- Add tests for Criteria classes (currently 0% coverage)
 - Add integration tests with actual database connections
 - Add performance benchmarks
 - Add HTML coverage reports with `--coverage-html`
 - Add automated test execution on CI/CD
 - Add dataset testing for multiple scenarios
 - Add snapshot testing for complex SQL generation
-- Increase overall coverage target to 80%+
