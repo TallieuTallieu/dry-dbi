@@ -57,14 +57,14 @@ class QueryBuilder extends BuildHandler
     private array $having = [];
 
     /**
-     * @var int|null
+     * @var StatementInterface|null
      */
-    private ?int $limit = null;
+    private ?StatementInterface $limit = null;
 
     /**
-     * @var int|null
+     * @var StatementInterface|null
      */
-    private ?int $offset = null;
+    private ?StatementInterface $offset = null;
 
     /**
      * @param callable(TableBuilder): void $createScheme
@@ -274,11 +274,7 @@ class QueryBuilder extends BuildHandler
      */
     public function limit(int|Raw $limit): QueryBuilder
     {
-        if ($limit instanceof Raw) {
-            $this->limit = (int) $limit->getValue();
-        } else {
-            $this->limit = $limit;
-        }
+        $this->limit = $this->createStatement($limit);
         return $this;
     }
 
@@ -288,11 +284,7 @@ class QueryBuilder extends BuildHandler
      */
     public function offset(int|Raw $offset): QueryBuilder
     {
-        if ($offset instanceof Raw) {
-            $this->offset = (int) $offset->getValue();
-        } else {
-            $this->offset = $offset;
-        }
+        $this->offset = $this->createStatement($offset);
         return $this;
     }
 
@@ -512,11 +504,15 @@ class QueryBuilder extends BuildHandler
      */
     private function buildLimitOffset(): void
     {
-        if (isset($this->limit)) {
-            $this->addToQuery(' LIMIT ' . $this->limit);
+        $limit = $this->limit;
+        if ($limit !== null) {
+            $this->addToQuery(' LIMIT ' . $limit->getValue());
+            $this->addParameters($limit->getBindings());
 
-            if (isset($this->offset)) {
-                $this->addToQuery(' OFFSET ' . $this->offset);
+            $offset = $this->offset;
+            if ($offset !== null) {
+                $this->addToQuery(' OFFSET ' . $offset->getValue());
+                $this->addParameters($offset->getBindings());
             }
         }
     }
