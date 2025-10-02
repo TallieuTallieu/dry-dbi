@@ -4,22 +4,25 @@ namespace Tnt\Dbi;
 
 class JoinBuilder extends BuildHandler
 {
-    private $alias;
+    /**
+     * @var string|null
+     */
+    private ?string $alias = null;
 
     /**
      * @var string
      */
-    private $type;
+    private string $type = 'INNER';
 
     /**
-     * @var array
+     * @var array<int, array{0: string, 1: string, 2: string, 3: bool}>
      */
-    private $on = [];
+    private array $on = [];
 
     /**
      * @param string $type
      */
-    public function setType(string $type)
+    public function setType(string $type): void
     {
         $joinTypes = [
             'left' => 'LEFT',
@@ -27,7 +30,7 @@ class JoinBuilder extends BuildHandler
             'inner' => 'INNER',
         ];
 
-        if (! isset($joinTypes[$type])) {
+        if (!isset($joinTypes[$type])) {
             throw new \InvalidArgumentException('Unknown join type');
         }
 
@@ -40,8 +43,12 @@ class JoinBuilder extends BuildHandler
      * @param string $value
      * @return BuildHandler
      */
-    public function on(string $field, string $operator, string $value, bool $prefix = true): BuildHandler
-    {
+    public function on(
+        string $field,
+        string $operator,
+        string $value,
+        bool $prefix = true
+    ): BuildHandler {
         $this->on[] = [$field, $operator, $value, $prefix];
         return $this;
     }
@@ -59,9 +66,9 @@ class JoinBuilder extends BuildHandler
         return $this;
     }
 
-    public function build()
+    public function build(): void
     {
-        $join = $this->type.' JOIN '.$this->quote($this->getTable());
+        $join = $this->type . ' JOIN ' . $this->quote($this->getTable());
 
         if (!empty($this->alias)) {
             $join .= ' AS ' . $this->quote($this->alias);

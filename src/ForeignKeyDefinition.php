@@ -48,8 +48,14 @@ class ForeignKeyDefinition
      * @param string $onDelete
      * @param string $onUpdate
      */
-    public function __construct(string $table, string $column, string $foreignTable, string $foreignColumn, string $onDelete, string $onUpdate)
-    {
+    public function __construct(
+        string $table,
+        string $column,
+        string $foreignTable,
+        string $foreignColumn,
+        string $onDelete,
+        string $onUpdate
+    ) {
         $this->table = $table;
         $this->column = $column;
         $this->foreignTable = $foreignTable;
@@ -73,7 +79,15 @@ class ForeignKeyDefinition
      */
     public function getIdentifier(): string
     {
-        return ($this->identifierName ?: 'fk_'.$this->table.'_'.$this->column.'_'.$this->foreignTable.'_'.$this->foreignColumn);
+        return $this->identifierName ?:
+            'fk_' .
+                    $this->table .
+                    '_' .
+                    $this->column .
+                    '_' .
+                    $this->foreignTable .
+                    '_' .
+                    $this->foreignColumn;
     }
 
     /**
@@ -100,11 +114,13 @@ class ForeignKeyDefinition
         return $this->column;
     }
 
-    public function getOnDelete(): string {
+    public function getOnDelete(): string
+    {
         return $this->onDelete;
     }
 
-    public function getOnUpdate(): string {
+    public function getOnUpdate(): string
+    {
         return $this->onUpdate;
     }
 }

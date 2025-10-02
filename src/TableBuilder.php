@@ -7,7 +7,7 @@ class TableBuilder extends BuildHandler
     /**
      * @var bool
      */
-    private $isAlter;
+    private bool $isAlter;
 
     /**
      * TableBuilder constructor.
@@ -19,54 +19,54 @@ class TableBuilder extends BuildHandler
     }
 
     /**
-     * @var array $addColumns
+     * @var array<int, ColumnDefinition>
      */
-    private $addColumns = [];
+    private array $addColumns = [];
 
     /**
-     * @var array $changeColumns
+     * @var array<int, ColumnDefinition>
      */
-    private $changeColumns = [];
+    private array $changeColumns = [];
 
     /**
-     * @var array $dropColumns
+     * @var array<int, string>
      */
-    private $dropColumns = [];
+    private array $dropColumns = [];
 
     /**
-     * @var array $dropForeignKeys
+     * @var array<int, ForeignKeyDefinition>
      */
-    private $dropForeignKeys = [];
+    private array $dropForeignKeys = [];
 
     /**
-     * @var array $dropForeignKeyIdentifiers
+     * @var array<int, string>
      */
-    private $dropForeignKeyIdentifiers = [];
+    private array $dropForeignKeyIdentifiers = [];
 
     /**
-     * @var array $addUniques
+     * @var array<int, UniqueDefinition>
      */
-    private $addUniques = [];
+    private array $addUniques = [];
 
     /***
-     * @var array $dropUniques
+     * @var array<int, string>
      */
-    private $dropUniques = [];
+    private array $dropUniques = [];
 
     /**
-     * @var ForeignKeyDefinition[] $addForeignKeys
+     * @var array<int, ForeignKeyDefinition>
      */
-    private $addForeignKeys = [];
+    private array $addForeignKeys = [];
 
     /**
-     * @var array $timestamps
+     * @var array<string, string>
      */
-    private $timestamps = [];
+    private array $timestamps = [];
 
     /**
-     * @var array $dropTriggers
+     * @var array<int, string>
      */
-    private $dropTriggers = [];
+    private array $dropTriggers = [];
 
     /**
      * @param string $name
@@ -397,6 +397,9 @@ class TableBuilder extends BuildHandler
      * Get generated trigger names for cleanup
      * @return array
      */
+    /**
+     * @return array<int, string>
+     */
     public function getGeneratedTriggerNames(): array
     {
         if (empty($this->timestamps)) {
@@ -407,4 +410,3 @@ class TableBuilder extends BuildHandler
         return [$tableName . '_updated_trigger'];
     }
 }
-

@@ -23,7 +23,7 @@ class UniqueDefinition
      */
     public function getIdentifier(): string
     {
-        return 'uq_'.$this->column;
+        return 'uq_' . $this->column;
     }
 
     /**
