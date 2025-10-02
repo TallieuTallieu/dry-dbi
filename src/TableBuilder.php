@@ -69,6 +69,16 @@ class TableBuilder extends BuildHandler
     private array $dropTriggers = [];
 
     /**
+     * @var IndexDefinition[] $addIndexes
+     */
+    private $addIndexes = [];
+
+    /**
+     * @var array $dropIndexes
+     */
+    private $dropIndexes = [];
+
+    /**
      * @param string $name
      * @param string $type
      * @return ColumnDefinition
@@ -222,6 +232,39 @@ class TableBuilder extends BuildHandler
     }
 
     /**
+     * @param string|array $columns
+     * @return IndexDefinition
+     */
+    public function addIndex($columns): IndexDefinition
+    {
+        $index = new IndexDefinition($columns);
+        $this->addIndexes[] = $index;
+
+        return $index;
+    }
+
+    /**
+     * @param string|array $columns
+     * @return IndexDefinition
+     */
+    public function dropIndex($columns): IndexDefinition
+    {
+        $index = new IndexDefinition($columns);
+        $this->dropIndexes[] = $index;
+
+        return $index;
+    }
+
+    /**
+     * @param string $identifier
+     * @return void
+     */
+    public function dropIndexByIdentifier(string $identifier): void
+    {
+        $this->dropIndexes[] = $identifier;
+    }
+
+    /**
      * @param string $name
      * @return void
      */
@@ -314,6 +357,17 @@ class TableBuilder extends BuildHandler
                     'DROP INDEX ' . $this->quote($unique->getIdentifier());
             }
 
+            foreach ($this->dropIndexes as $index) {
+                if (is_string($index)) {
+                    // Drop by identifier string
+                    $columnStatement[] = 'DROP INDEX ' . $this->quote($index);
+                } else {
+                    // Drop by IndexDefinition object
+                    $columnStatement[] =
+                        'DROP INDEX ' . $this->quote($index->getIdentifier());
+                }
+            }
+
             foreach ($this->dropColumns as $column) {
                 $columnStatement[] = 'DROP COLUMN ' . $this->quote($column);
             }
@@ -347,6 +401,20 @@ class TableBuilder extends BuildHandler
                 $this->quote($unique->getIdentifier()) .
                 ' UNIQUE (' .
                 $this->quote($unique->getColumn()) .
+                ')';
+        }
+
+        foreach ($this->addIndexes as $index) {
+            $columns = array_map(function ($col) {
+                return $this->quote($col);
+            }, $index->getColumns());
+
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') .
+                'INDEX ' .
+                $this->quote($index->getIdentifier()) .
+                ' (' .
+                implode(', ', $columns) .
                 ')';
         }
 
