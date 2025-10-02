@@ -11,38 +11,43 @@ class In implements CriteriaInterface
     /**
      * @var string
      */
-    private $column;
+    private string $column;
 
     /**
-     * @var array
+     * @var array<int, mixed>
      */
-    private $value;
+    private array $value;
 
     /**
      * Equals constructor.
-     * @param mixed $column
-     * @param array $value
+     * @param string $column
+     * @param array<int, mixed> $value
      */
-    public function __construct($column, $value)
+    public function __construct(string $column, array $value)
     {
         $this->column = $column;
         $this->value = $value;
     }
 
-    private function prepValues() {
-        return '(' . join(',',array_map(function ($value) {
-            if (is_string($value)) {
-
-                return "'$value'";
-            }
-            return $value;
-        }, $this->value)) . ')';
+    private function prepValues(): string
+    {
+        return '(' .
+            join(
+                ',',
+                array_map(function ($value) {
+                    if (is_string($value)) {
+                        return "'$value'";
+                    }
+                    return $value;
+                }, $this->value)
+            ) .
+            ')';
     }
 
     /**
      * @param QueryBuilder $queryBuilder
      */
-    public function apply(QueryBuilder $queryBuilder)
+    public function apply(QueryBuilder $queryBuilder): void
     {
         $queryBuilder->where($this->column, 'IN', new Raw($this->prepValues()));
     }

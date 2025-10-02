@@ -10,16 +10,19 @@ class Equals implements CriteriaInterface
     /**
      * @var string
      */
-    private $column;
+    private string $column;
 
-    private $value;
+    /**
+     * @var mixed
+     */
+    private mixed $value;
 
     /**
      * Equals constructor.
-     * @param mixed $column
-     * @param $value
+     * @param string $column
+     * @param mixed $value
      */
-    public function __construct($column, $value)
+    public function __construct(string $column, mixed $value)
     {
         $this->column = $column;
         $this->value = $value;
@@ -28,7 +31,7 @@ class Equals implements CriteriaInterface
     /**
      * @param QueryBuilder $queryBuilder
      */
-    public function apply(QueryBuilder $queryBuilder)
+    public function apply(QueryBuilder $queryBuilder): void
     {
         $queryBuilder->where($this->column, '=', $this->value);
     }
