@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "format-js": "prettier --write --ignore-unknown src"
+    "format": "prettier --write --ignore-unknown src tests"
   },
   "devDependencies": {
     "@prettier/plugin-php": "^0.22.4",

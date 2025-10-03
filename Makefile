@@ -65,7 +65,7 @@ docker-exec: docker
 ## YARN ##
 
 yarn-format: docker
-	docker compose exec -T dry-dbi-dev yarn format-js
+	docker compose exec -T dry-dbi-dev yarn format
 .PHONY: yarn-format
 
 yarn-install: docker
