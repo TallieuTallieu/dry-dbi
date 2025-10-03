@@ -70,24 +70,26 @@ Pest uses a simple, expressive syntax for writing tests. Create new test files i
 use Tnt\Dbi\TableBuilder;
 
 describe('Your Feature', function () {
-  it('does something specific', function () {
-    // Arrange
-    $tableBuilder = new TableBuilder(false);
-    $tableBuilder->table('test_table');
+    it('does something specific', function () {
+        // Arrange
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('test_table');
 
-    // Act
-    $tableBuilder->addColumn('id', 'int')->primaryKey();
-    $tableBuilder->build();
+        // Act
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->build();
 
-    // Assert
-    $query = $tableBuilder->getQuery();
-    expect($query)->toContain('`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY');
-  });
+        // Assert
+        $query = $tableBuilder->getQuery();
+        expect($query)->toContain(
+            '`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY'
+        );
+    });
 
-  it('handles another scenario', function () {
-    // Your test logic here
-    expect(true)->toBe(true);
-  });
+    it('handles another scenario', function () {
+        // Your test logic here
+        expect(true)->toBe(true);
+    });
 });
 ```
 
