@@ -20,7 +20,7 @@ help:
 	@echo "  docker-exec    - Execute bash in dry-dbi-dev container"
 	@echo ""
 	@echo "$(Yellow)Yarn:$(NC)"
-	@echo "  yarn-format - Format files"
+	@echo "  yarn-format    - Format all files with Prettier"
 	@echo "  yarn-install   - Install yarn dependencies"
 	@echo ""
 	@echo "$(Yellow)Testing:$(NC)"
@@ -64,9 +64,9 @@ docker-exec: docker
 
 ## YARN ##
 
-yarn-format-js: docker
-	docker compose exec -T dry-dbi-dev yarn format-js
-.PHONY: yarn-format-js
+yarn-format: docker
+	docker compose exec -T dry-dbi-dev yarn format
+.PHONY: yarn-format
 
 yarn-install: docker
 	docker compose exec -T dry-dbi-dev yarn
