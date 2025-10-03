@@ -455,8 +455,8 @@ class TableBuilder extends BuildHandler
     {
         if (!empty($this->dropTriggers)) {
             foreach ($this->dropTriggers as $triggerName) {
-                $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' . $this->quote($triggerName)
+                $this->addAdditionalQuery(
+                    'DROP TRIGGER IF EXISTS ' . $this->quote($triggerName)
                 );
             }
         }
@@ -472,18 +472,18 @@ class TableBuilder extends BuildHandler
                 $updateTriggerName = $tableName . '_updated_trigger';
 
                 // Drop existing triggers
-                $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' .
+                $this->addAdditionalQuery(
+                    'DROP TRIGGER IF EXISTS ' .
                         $this->quote($insertTriggerName)
                 );
-                $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' .
+                $this->addAdditionalQuery(
+                    'DROP TRIGGER IF EXISTS ' .
                         $this->quote($updateTriggerName)
                 );
 
                 // Create INSERT trigger for created timestamp
                 $insertTriggerSql =
-                    '; CREATE TRIGGER ' .
+                    'CREATE TRIGGER ' .
                     $this->quote($insertTriggerName) .
                     ' BEFORE INSERT ON ' .
                     $this->quote($tableName) .
@@ -496,11 +496,11 @@ class TableBuilder extends BuildHandler
                     ' = UNIX_TIMESTAMP();' .
                     ' END';
 
-                $this->addToQuery($insertTriggerSql);
+                $this->addAdditionalQuery($insertTriggerSql);
 
                 // Create UPDATE trigger for updated timestamp
                 $updateTriggerSql =
-                    '; CREATE TRIGGER ' .
+                    'CREATE TRIGGER ' .
                     $this->quote($updateTriggerName) .
                     ' BEFORE UPDATE ON ' .
                     $this->quote($tableName) .
@@ -508,25 +508,25 @@ class TableBuilder extends BuildHandler
                     $this->quote($updatedColumn) .
                     ' = UNIX_TIMESTAMP()';
 
-                $this->addToQuery($updateTriggerSql);
+                $this->addAdditionalQuery($updateTriggerSql);
             } else {
                 // For datetime format, we need triggers for both INSERT and UPDATE
                 $insertTriggerName = $tableName . '_created_trigger';
                 $updateTriggerName = $tableName . '_updated_trigger';
 
                 // Drop existing triggers
-                $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' .
+                $this->addAdditionalQuery(
+                    'DROP TRIGGER IF EXISTS ' .
                         $this->quote($insertTriggerName)
                 );
-                $this->addToQuery(
-                    '; DROP TRIGGER IF EXISTS ' .
+                $this->addAdditionalQuery(
+                    'DROP TRIGGER IF EXISTS ' .
                         $this->quote($updateTriggerName)
                 );
 
                 // Create INSERT trigger for created timestamp
                 $insertTriggerSql =
-                    '; CREATE TRIGGER ' .
+                    'CREATE TRIGGER ' .
                     $this->quote($insertTriggerName) .
                     ' BEFORE INSERT ON ' .
                     $this->quote($tableName) .
@@ -539,11 +539,11 @@ class TableBuilder extends BuildHandler
                     ' = CURRENT_TIMESTAMP;' .
                     ' END';
 
-                $this->addToQuery($insertTriggerSql);
+                $this->addAdditionalQuery($insertTriggerSql);
 
                 // Create UPDATE trigger for updated timestamp
                 $updateTriggerSql =
-                    '; CREATE TRIGGER ' .
+                    'CREATE TRIGGER ' .
                     $this->quote($updateTriggerName) .
                     ' BEFORE UPDATE ON ' .
                     $this->quote($tableName) .
@@ -551,7 +551,7 @@ class TableBuilder extends BuildHandler
                     $this->quote($updatedColumn) .
                     ' = CURRENT_TIMESTAMP';
 
-                $this->addToQuery($updateTriggerSql);
+                $this->addAdditionalQuery($updateTriggerSql);
             }
         }
     }

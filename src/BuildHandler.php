@@ -19,6 +19,12 @@ abstract class BuildHandler
     private string $query = '';
 
     /**
+     * Additional queries (e.g., for triggers)
+     * @var array<int, string>
+     */
+    private array $additionalQueries = [];
+
+    /**
      * The output query parameters
      * @var array<int, mixed>
      */
@@ -134,5 +140,33 @@ abstract class BuildHandler
     final public function getQuery(): string
     {
         return $this->query;
+    }
+
+    /**
+     * Add an additional query (e.g., for triggers)
+     * @param string $query
+     */
+    final protected function addAdditionalQuery(string $query): void
+    {
+        $this->additionalQueries[] = $query;
+    }
+
+    /**
+     * Get all queries including the main query and additional queries
+     * @return array<int, string>
+     */
+    final public function getQueries(): array
+    {
+        $queries = [];
+        
+        if (!empty($this->query)) {
+            $queries[] = $this->query;
+        }
+        
+        foreach ($this->additionalQueries as $additionalQuery) {
+            $queries[] = $additionalQuery;
+        }
+        
+        return $queries;
     }
 }

@@ -13,11 +13,16 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps();
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $queries = $tableBuilder->getQueries();
+        $allQueries = implode(' ', $queries);
         
-        expect($query)
+        expect($queries[0])
             ->toContain('`created` INT UNSIGNED NOT NULL')
-            ->toContain('`updated` INT UNSIGNED NOT NULL')
+            ->toContain('`updated` INT UNSIGNED NOT NULL');
+        
+        expect($allQueries)
+            ->toContain('DROP TRIGGER IF EXISTS `users_created_trigger`')
+            ->toContain('DROP TRIGGER IF EXISTS `users_updated_trigger`')
             ->toContain('CREATE TRIGGER `users_created_trigger`')
             ->toContain('BEFORE INSERT ON `users`')
             ->toContain('SET NEW.`created` = UNIX_TIMESTAMP()')
@@ -35,9 +40,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps('created_on', 'modified_on', TimestampFormat::DATETIME);
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('`created_on` TIMESTAMP NOT NULL')
             ->toContain('`modified_on` TIMESTAMP NOT NULL')
             ->toContain('CREATE TRIGGER `posts_created_trigger`')
@@ -54,9 +59,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps();
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('ADD `created` INT UNSIGNED NOT NULL')
             ->toContain('ADD `updated` INT UNSIGNED NOT NULL')
             ->toContain('CREATE TRIGGER `existing_table_created_trigger`')
@@ -76,9 +81,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->dropTimestampTriggers();
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('DROP COLUMN `created`')
             ->toContain('DROP COLUMN `updated`')
             ->toContain('DROP TRIGGER IF EXISTS `users_created_trigger`')
@@ -111,9 +116,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->addForeignKey('author_id', 'users', 'id', 'CASCADE');
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('`created` INT UNSIGNED NOT NULL')
             ->toContain('`updated` INT UNSIGNED NOT NULL')
             ->toContain('CREATE TRIGGER `blog_posts_created_trigger`')
@@ -132,9 +137,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->addForeignKey('category_id', 'categories', 'id');
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('ADD `new_field` VARCHAR(100) NOT NULL')
             ->toContain('CHANGE `old_field` `old_field` TEXT NOT NULL')
             ->toContain('DROP COLUMN `obsolete_field`')
@@ -156,9 +161,9 @@ describe('TableBuilder Timestamps', function () {
         $cleanupBuilder->dropColumn('updated');
         $cleanupBuilder->build();
         
-        $cleanupQuery = $cleanupBuilder->getQuery();
+        $cleanupQueries = implode(' ', $cleanupBuilder->getQueries());
         
-        expect($cleanupQuery)
+        expect($cleanupQueries)
             ->toContain('DROP TRIGGER IF EXISTS `products_created_trigger`')
             ->toContain('DROP TRIGGER IF EXISTS `products_updated_trigger`')
             ->toContain('DROP COLUMN `created`')
@@ -170,9 +175,9 @@ describe('TableBuilder Timestamps', function () {
         $newBuilder->timestamps('creation_date', 'modification_date');
         $newBuilder->build();
         
-        $newQuery = $newBuilder->getQuery();
+        $newQueries = implode(' ', $newBuilder->getQueries());
         
-        expect($newQuery)
+        expect($newQueries)
             ->toContain('ADD `creation_date` INT UNSIGNED NOT NULL')
             ->toContain('ADD `modification_date` INT UNSIGNED NOT NULL')
             ->toContain('CREATE TRIGGER `products_created_trigger`')
@@ -188,9 +193,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->dropTimestampTrigger('custom_trigger_name');
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)->toContain('DROP TRIGGER IF EXISTS `custom_trigger_name`');
+        expect($allQueries)->toContain('DROP TRIGGER IF EXISTS `custom_trigger_name`');
     });
 
     it('creates table with unix timestamps using enum', function () {
@@ -201,9 +206,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps('created', 'updated', TimestampFormat::UNIX);
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('`created` INT UNSIGNED NOT NULL')
             ->toContain('`updated` INT UNSIGNED NOT NULL')
             ->toContain('CREATE TRIGGER `users_created_trigger`')
@@ -223,9 +228,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps('created_at', 'updated_at', TimestampFormat::UNIX);
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('`created_at` INT UNSIGNED NOT NULL')
             ->toContain('`updated_at` INT UNSIGNED NOT NULL')
             ->toContain('SET NEW.`created_at` = UNIX_TIMESTAMP()')
@@ -239,9 +244,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps('created', 'updated', TimestampFormat::UNIX);
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('ADD `created` INT UNSIGNED NOT NULL')
             ->toContain('ADD `updated` INT UNSIGNED NOT NULL')
             ->toContain('CREATE TRIGGER `existing_table_created_trigger`')
@@ -271,9 +276,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->dropTimestampTriggers();
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('DROP COLUMN `created`')
             ->toContain('DROP COLUMN `updated`')
             ->toContain('DROP TRIGGER IF EXISTS `users_created_trigger`')
@@ -292,9 +297,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->addForeignKey('author_id', 'users', 'id', 'CASCADE');
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('`created` INT UNSIGNED NOT NULL')
             ->toContain('`updated` INT UNSIGNED NOT NULL')
             ->toContain('CREATE TRIGGER `blog_posts_created_trigger`')
@@ -310,9 +315,9 @@ describe('TableBuilder Timestamps', function () {
         $tableBuilder->timestamps('created', 'updated', TimestampFormat::DATETIME);
         $tableBuilder->build();
         
-        $query = $tableBuilder->getQuery();
+        $allQueries = implode(' ', $tableBuilder->getQueries());
         
-        expect($query)
+        expect($allQueries)
             ->toContain('`created` TIMESTAMP NOT NULL')
             ->toContain('`updated` TIMESTAMP NOT NULL')
             ->toContain('CURRENT_TIMESTAMP')
