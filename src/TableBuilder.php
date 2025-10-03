@@ -473,12 +473,10 @@ class TableBuilder extends BuildHandler
 
                 // Drop existing triggers
                 $this->addAdditionalQuery(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote($insertTriggerName)
+                    'DROP TRIGGER IF EXISTS ' . $this->quote($insertTriggerName)
                 );
                 $this->addAdditionalQuery(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote($updateTriggerName)
+                    'DROP TRIGGER IF EXISTS ' . $this->quote($updateTriggerName)
                 );
 
                 // Create INSERT trigger for created timestamp
@@ -516,12 +514,10 @@ class TableBuilder extends BuildHandler
 
                 // Drop existing triggers
                 $this->addAdditionalQuery(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote($insertTriggerName)
+                    'DROP TRIGGER IF EXISTS ' . $this->quote($insertTriggerName)
                 );
                 $this->addAdditionalQuery(
-                    'DROP TRIGGER IF EXISTS ' .
-                        $this->quote($updateTriggerName)
+                    'DROP TRIGGER IF EXISTS ' . $this->quote($updateTriggerName)
                 );
 
                 // Create INSERT trigger for created timestamp

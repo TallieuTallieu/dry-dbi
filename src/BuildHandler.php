@@ -158,15 +158,15 @@ abstract class BuildHandler
     final public function getQueries(): array
     {
         $queries = [];
-        
+
         if (!empty($this->query)) {
             $queries[] = $this->query;
         }
-        
+
         foreach ($this->additionalQueries as $additionalQuery) {
             $queries[] = $additionalQuery;
         }
-        
+
         return $queries;
     }
 }
