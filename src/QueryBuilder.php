@@ -22,6 +22,11 @@ class QueryBuilder extends BuildHandler
     private bool $drop = false;
 
     /**
+     * @var string|null
+     */
+    private ?string $rename = null;
+
+    /**
      * @var array<int, StatementInterface>
      */
     private array $select = [];
@@ -92,6 +97,16 @@ class QueryBuilder extends BuildHandler
     public function drop(): QueryBuilder
     {
         $this->drop = true;
+        return $this;
+    }
+
+    /**
+     * @param string $newTableName
+     * @return QueryBuilder
+     */
+    public function rename(string $newTableName): QueryBuilder
+    {
+        $this->rename = $newTableName;
         return $this;
     }
 
@@ -555,6 +570,19 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
+     *
+     */
+    private function buildRename(): void
+    {
+        $this->addToQuery(
+            'RENAME TABLE ' .
+                $this->quote($this->getTable()) .
+                ' TO ' .
+                $this->quote($this->rename)
+        );
+    }
+
+    /**
      * @return bool
      */
     private function isSelectQuery(): bool
@@ -587,6 +615,14 @@ class QueryBuilder extends BuildHandler
     }
 
     /**
+     * @return bool
+     */
+    private function isRenameQuery(): bool
+    {
+        return $this->rename !== null;
+    }
+
+    /**
      * @return void
      */
     public function build(): void
@@ -615,6 +651,11 @@ class QueryBuilder extends BuildHandler
 
         if ($this->isDropQuery()) {
             $this->buildDrop();
+            return;
+        }
+
+        if ($this->isRenameQuery()) {
+            $this->buildRename();
             return;
         }
     }

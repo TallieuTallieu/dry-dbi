@@ -547,6 +547,58 @@ describe('QueryBuilder - DROP TABLE', function () {
     });
 });
 
+describe('QueryBuilder - RENAME TABLE', function () {
+    it('builds RENAME TABLE query', function () {
+        $qb = new QueryBuilder();
+        $qb->table('old_users');
+        $qb->rename('new_users');
+        $qb->build();
+
+        expect($qb->getQuery())->toBe('RENAME TABLE `old_users` TO `new_users`');
+    });
+
+    it('handles table names with underscores', function () {
+        $qb = new QueryBuilder();
+        $qb->table('user_profiles');
+        $qb->rename('customer_profiles');
+        $qb->build();
+
+        expect($qb->getQuery())->toBe(
+            'RENAME TABLE `user_profiles` TO `customer_profiles`'
+        );
+    });
+
+    it('handles table names with numbers', function () {
+        $qb = new QueryBuilder();
+        $qb->table('table_v1');
+        $qb->rename('table_v2');
+        $qb->build();
+
+        expect($qb->getQuery())->toBe('RENAME TABLE `table_v1` TO `table_v2`');
+    });
+
+    it('returns fluent interface from rename', function () {
+        $qb = new QueryBuilder();
+        $qb->table('old_table');
+        $result = $qb->rename('new_table');
+
+        expect($result)->toBe($qb);
+    });
+
+    it('properly quotes table names to prevent SQL injection', function () {
+        $qb = new QueryBuilder();
+        $qb->table('users');
+        $qb->rename('new_users');
+        $qb->build();
+
+        $query = $qb->getQuery();
+        expect($query)
+            ->toContain('`users`')
+            ->toContain('`new_users`')
+            ->not->toContain('users TO new_users');
+    });
+});
+
 describe('QueryBuilder - Fluent Interface', function () {
     it('chains all methods fluently', function () {
         $qb = new QueryBuilder();
