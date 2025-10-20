@@ -554,7 +554,9 @@ describe('QueryBuilder - RENAME TABLE', function () {
         $qb->rename('new_users');
         $qb->build();
 
-        expect($qb->getQuery())->toBe('RENAME TABLE `old_users` TO `new_users`');
+        expect($qb->getQuery())->toBe(
+            'RENAME TABLE `old_users` TO `new_users`'
+        );
     });
 
     it('handles table names with underscores', function () {
