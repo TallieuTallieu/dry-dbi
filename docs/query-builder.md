@@ -1,16 +1,16 @@
 # QueryBuilder
 
-The QueryBuilder provides a fluent interface for constructing SQL queries. It extends BuildHandler and supports SELECT, CREATE, ALTER, and DROP operations.
+The QueryBuilder provides a fluent interface for constructing SQL queries. It extends BuildHandler and supports SELECT, CREATE, ALTER, DROP, and RENAME operations.
 
 ## Basic Usage
 
 ```php
 $qb = new QueryBuilder();
 $qb->table('users')
-   ->selectAll()
-   ->where('active', '=', 1)
-   ->orderBy('name')
-   ->limit(10);
+    ->selectAll()
+    ->where('active', '=', 1)
+    ->orderBy('name')
+    ->limit(10);
 ```
 
 ## SELECT Operations
@@ -24,9 +24,7 @@ public function select($column): QueryBuilder
 Adds a column to the SELECT clause.
 
 ```php
-$qb->select('name')
-   ->select('email')
-   ->select(new Raw('COUNT(*) as total'));
+$qb->select('name')->select('email')->select(new Raw('COUNT(*) as total'));
 ```
 
 ### selectAll()
@@ -60,8 +58,7 @@ public function where($field, string $operator, $value, string $connectBefore = 
 Adds a WHERE condition.
 
 ```php
-$qb->where('age', '>', 18)
-   ->where('status', '=', 'active', 'OR');
+$qb->where('age', '>', 18)->where('status', '=', 'active', 'OR');
 ```
 
 ### whereGroup()
@@ -73,9 +70,8 @@ public function whereGroup(callable $call, string $connectBefore = 'AND'): void
 Groups WHERE conditions with parentheses.
 
 ```php
-$qb->whereGroup(function($qb) {
-    $qb->where('type', '=', 'admin')
-       ->where('type', '=', 'moderator', 'OR');
+$qb->whereGroup(function ($qb) {
+    $qb->where('type', '=', 'admin')->where('type', '=', 'moderator', 'OR');
 });
 ```
 
@@ -160,9 +156,7 @@ public function rightJoin(string $table): JoinBuilder
 Creates a RIGHT JOIN.
 
 ```php
-$qb->leftJoin('posts')
-   ->on('users.id', '=', 'posts.user_id')
-   ->as('p');
+$qb->leftJoin('posts')->on('users.id', '=', 'posts.user_id')->as('p');
 ```
 
 ## Schema Operations
@@ -176,15 +170,14 @@ public function create(callable $createScheme): QueryBuilder
 Creates a CREATE TABLE statement.
 
 ```php
-$qb->table('users')
-   ->create(function(TableBuilder $table) {
-       $table->addColumn('id', 'int')->primaryKey();
-       $table->addColumn('name', 'varchar')->length(255);
-       $table->addColumn('email', 'varchar')->length(255);
-       
-       // Add automatic timestamp management
-       $table->timestamps();
-   });
+$qb->table('users')->create(function (TableBuilder $table) {
+    $table->addColumn('id', 'int')->primaryKey();
+    $table->addColumn('name', 'varchar')->length(255);
+    $table->addColumn('email', 'varchar')->length(255);
+
+    // Add automatic timestamp management
+    $table->timestamps();
+});
 ```
 
 ### alter()
@@ -196,14 +189,13 @@ public function alter(callable $alterScheme): QueryBuilder
 Creates an ALTER TABLE statement.
 
 ```php
-$qb->table('users')
-   ->alter(function(TableBuilder $table) {
-       $table->addColumn('phone', 'varchar')->length(20);
-       $table->dropColumn('old_field');
-       
-       // Add timestamp functionality to existing table
-       $table->timestamps();
-   });
+$qb->table('users')->alter(function (TableBuilder $table) {
+    $table->addColumn('phone', 'varchar')->length(20);
+    $table->dropColumn('old_field');
+
+    // Add timestamp functionality to existing table
+    $table->timestamps();
+});
 ```
 
 ### drop()
@@ -213,6 +205,33 @@ public function drop(): QueryBuilder
 ```
 
 Creates a DROP TABLE statement.
+
+```php
+$qb->table('old_table')->drop();
+```
+
+### rename()
+
+```php
+public function rename(string $newTableName): QueryBuilder
+```
+
+Creates a RENAME TABLE statement to change the table name.
+
+```php
+// Rename a table
+$qb->table('old_users')->rename('new_users');
+
+// Rename with underscores
+$qb->table('user_profiles')->rename('customer_profiles');
+```
+
+**Note:** Table renaming is a DDL operation that:
+
+- Preserves all table data, indexes, and constraints
+- Automatically updates foreign key references in MySQL
+- Does not require data migration
+- Is an atomic operation
 
 ## Building and Execution
 
@@ -225,16 +244,21 @@ public function build(): void
 Builds the final SQL query. Called automatically by Repository.
 
 The QueryBuilder determines the query type based on what methods were called:
+
 - If `select*()` methods were used: SELECT query
-- If `create()` was called: CREATE TABLE query  
+- If `create()` was called: CREATE TABLE query
 - If `alter()` was called: ALTER TABLE query
 - If `drop()` was called: DROP TABLE query
+- If `rename()` was called: RENAME TABLE query
 
 ## Raw SQL
 
 Use the `Raw` class for custom SQL expressions:
 
 ```php
-$qb->select(new Raw('COUNT(*) as total'))
-   ->where(new Raw('YEAR(created_at)'), '=', 2023);
+$qb->select(new Raw('COUNT(*) as total'))->where(
+    new Raw('YEAR(created_at)'),
+    '=',
+    2023
+);
 ```

@@ -8,13 +8,13 @@ A PHP 8.1+ database abstraction library providing a clean, fluent interface for 
 // Create a repository
 class UserRepository extends BaseRepository
 {
-  protected $model = User::class;
+    protected $model = User::class;
 
-  public function active(): self
-  {
-    $this->addCriteria(new IsTrue('is_active'));
-    return $this;
-  }
+    public function active(): self
+    {
+        $this->addCriteria(new IsTrue('is_active'));
+        return $this;
+    }
 }
 
 // Use the repository
@@ -33,7 +33,7 @@ $users = UserRepository::create()->active()->orderBy('name')->amount(10)->get();
 
 - **[QueryBuilder](query-builder.md)** - Fluent SQL query construction
 - SELECT, WHERE, JOIN, ORDER BY, GROUP BY operations
-- Schema operations (CREATE, ALTER, DROP)
+- Schema operations (CREATE, ALTER, DROP, RENAME)
 - Parameter binding and SQL injection protection
 
 ### [Criteria System](criteria.md)
@@ -79,12 +79,12 @@ $users = UserRepository::create()->active()->orderBy('name')->amount(10)->get();
 ```php
 class BetweenDates implements CriteriaInterface
 {
-  public function apply(QueryBuilder $queryBuilder)
-  {
-    $queryBuilder
-      ->where('created_at', '>=', $this->startDate)
-      ->where('created_at', '<=', $this->endDate);
-  }
+    public function apply(QueryBuilder $queryBuilder)
+    {
+        $queryBuilder
+            ->where('created_at', '>=', $this->startDate)
+            ->where('created_at', '<=', $this->endDate);
+    }
 }
 ```
 
@@ -92,12 +92,16 @@ class BetweenDates implements CriteriaInterface
 
 ```php
 $repository->useQueryBuilder(function (QueryBuilder $qb) {
-  $qb
-    ->leftJoin('categories')
-    ->on('products.category_id', '=', 'categories.id')
-    ->whereGroup(function ($qb) {
-      $qb->where('status', '=', 'active')->where('featured', '=', true, 'OR');
-    });
+    $qb->leftJoin('categories')
+        ->on('products.category_id', '=', 'categories.id')
+        ->whereGroup(function ($qb) {
+            $qb->where('status', '=', 'active')->where(
+                'featured',
+                '=',
+                true,
+                'OR'
+            );
+        });
 });
 ```
 
@@ -105,21 +109,21 @@ $repository->useQueryBuilder(function (QueryBuilder $qb) {
 
 ```php
 QueryBuilder::create()
-  ->table('users')
-  ->create(function (TableBuilder $table) {
-    $table->addColumn('id', 'int')->primaryKey();
-    $table->addColumn('email', 'varchar')->length(255);
-    $table->addColumn('status', 'varchar')->length(20);
-    $table->addForeignKey('role_id', 'roles');
-    $table->addUnique('email');
+    ->table('users')
+    ->create(function (TableBuilder $table) {
+        $table->addColumn('id', 'int')->primaryKey();
+        $table->addColumn('email', 'varchar')->length(255);
+        $table->addColumn('status', 'varchar')->length(20);
+        $table->addForeignKey('role_id', 'roles');
+        $table->addUnique('email');
 
-    // Add indexes for better query performance
-    $table->addIndex('status');
-    $table->addIndex(['role_id', 'status']);
+        // Add indexes for better query performance
+        $table->addIndex('status');
+        $table->addIndex(['role_id', 'status']);
 
-    // Add automatic timestamp management
-    $table->timestamps();
-  });
+        // Add automatic timestamp management
+        $table->timestamps();
+    });
 ```
 
 ## Installation
