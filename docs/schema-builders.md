@@ -105,16 +105,107 @@ $table->timestamps('created_on', 'modified_on', TimestampFormat::DATETIME);
 - A `created` column with `INT UNSIGNED NOT NULL`
 - An `updated` column with `INT UNSIGNED NOT NULL`
 - Two MySQL triggers:
-  - `{table_name}_created_trigger`: Sets both timestamps on INSERT using `UNIX_TIMESTAMP()`
-  - `{table_name}_updated_trigger`: Updates the updated timestamp on UPDATE using `UNIX_TIMESTAMP()`
+    - `{table_name}_created_trigger`: Sets both timestamps on INSERT using `UNIX_TIMESTAMP()`
+    - `{table_name}_updated_trigger`: Updates the updated timestamp on UPDATE using `UNIX_TIMESTAMP()`
 
 **Datetime Format:** Creates:
 
 - A `created` column with `TIMESTAMP NOT NULL`
 - An `updated` column with `TIMESTAMP NOT NULL`
 - Two MySQL triggers:
-  - `{table_name}_created_trigger`: Sets both timestamps on INSERT using `CURRENT_TIMESTAMP`
-  - `{table_name}_updated_trigger`: Updates the updated timestamp on UPDATE using `CURRENT_TIMESTAMP`
+    - `{table_name}_created_trigger`: Sets both timestamps on INSERT using `CURRENT_TIMESTAMP`
+    - `{table_name}_updated_trigger`: Updates the updated timestamp on UPDATE using `CURRENT_TIMESTAMP`
+
+#### seo()
+
+```php
+public function seo(
+    ?string $titleColumn = 'seo_title',
+    ?string $descriptionColumn = 'seo_description',
+    ?string $changeFrequencyColumn = 'seo_change_frequency',
+    ?string $photoColumn = 'seo_photo',
+    ?string $priorityColumn = 'seo_priority'
+): self
+```
+
+Shorthand method for adding standard SEO-related columns to a table. This is a convenient alternative to manually adding each SEO column separately. Pass `null` or an empty string to skip a column.
+
+```php
+// Add all SEO columns with default names
+$table->seo();
+
+// Add SEO columns with custom names
+$table->seo(
+    'meta_title',
+    'meta_desc',
+    'sitemap_freq',
+    'image_id',
+    'sitemap_priority'
+);
+
+// Skip some columns by passing null or empty string
+$table->seo(null, 'meta_description', null, 'photo_id', null);
+// Only creates: meta_description and photo_id
+
+// Skip all columns (no-op)
+$table->seo(null, null, null, null, null);
+```
+
+**Creates the following columns (if not skipped):**
+
+- `seo_title` VARCHAR(255) NULL - SEO-optimized page title
+- `seo_description` VARCHAR(255) NULL - Meta description for search engines
+- `seo_change_frequency` VARCHAR(255) NULL - Sitemap change frequency (e.g., 'daily', 'weekly')
+- `seo_photo` INT(11) NOT NULL - Foreign key to media/image table for social sharing
+- `seo_priority` DECIMAL(10) NULL - Sitemap priority value (0.0 to 1.0)
+
+**Also creates:**
+
+- Foreign key constraint from `seo_photo` (or custom photo column) to `dry_media_file.id` (if photo column is not skipped)
+
+#### dropSeo()
+
+```php
+public function dropSeo(
+    ?string $titleColumn = 'seo_title',
+    ?string $descriptionColumn = 'seo_description',
+    ?string $changeFrequencyColumn = 'seo_change_frequency',
+    ?string $photoColumn = 'seo_photo',
+    ?string $priorityColumn = 'seo_priority'
+): self
+```
+
+Shorthand method for dropping SEO-related columns and their constraints (ALTER TABLE only). Pass `null` or an empty string to skip dropping a column.
+
+```php
+// Remove all SEO columns with default names
+$table->dropSeo();
+
+// Remove SEO columns with custom names
+$table->dropSeo(
+    'meta_title',
+    'meta_desc',
+    'sitemap_freq',
+    'image_id',
+    'sitemap_priority'
+);
+
+// Skip some columns by passing null or empty string
+$table->dropSeo(null, 'meta_description', null, 'photo_id', null);
+// Only drops: meta_description and photo_id (with FK)
+
+// Skip all columns (no-op)
+$table->dropSeo(null, null, null, null, null);
+```
+
+**Drops the following (if not skipped):**
+
+- Foreign key constraint on `seo_photo` (or custom photo column)
+- Column `seo_title`
+- Column `seo_description`
+- Column `seo_change_frequency`
+- Column `seo_photo`
+- Column `seo_priority`
 
 #### dropTimestampTrigger()
 
@@ -144,8 +235,8 @@ Adds a foreign key constraint.
 
 ```php
 $table
-  ->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE')
-  ->identifier('fk_posts_user');
+    ->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE')
+    ->identifier('fk_posts_user');
 ```
 
 #### dropForeignKey()
@@ -355,10 +446,9 @@ public function as(string $alias): self
 Sets an alias for the joined table.
 
 ```php
-$qb
-  ->leftJoin('user_profiles')
-  ->as('profile')
-  ->on('users.id', '=', 'profile.user_id');
+$qb->leftJoin('user_profiles')
+    ->as('profile')
+    ->on('users.id', '=', 'profile.user_id');
 ```
 
 ## Definition Classes
@@ -430,8 +520,8 @@ The dry-dbi library provides automatic timestamp management through MySQL trigge
 When you call `timestamps()` on a TableBuilder:
 
 1. **Column Creation**: Two TIMESTAMP columns are added to your table
-   - `created` (or custom name): Set to `CURRENT_TIMESTAMP` when record is created
-   - `updated` (or custom name): Set to `CURRENT_TIMESTAMP` and updated automatically on changes
+    - `created` (or custom name): Set to `CURRENT_TIMESTAMP` when record is created
+    - `updated` (or custom name): Set to `CURRENT_TIMESTAMP` and updated automatically on changes
 
 2. **Trigger Creation**: A MySQL trigger is created with the naming convention `{table_name}_updated_trigger`
 
@@ -456,13 +546,13 @@ For example:
 - Always call `dropTimestampTriggers()` before dropping timestamp columns
 - When altering timestamp columns, recreate triggers to ensure consistency
 - **Unix timestamps (default)** are recommended for:
-  - Better performance and storage efficiency (4 bytes vs 8 bytes for TIMESTAMP)
-  - Faster integer comparisons
-  - Easier timezone handling in application code
+    - Better performance and storage efficiency (4 bytes vs 8 bytes for TIMESTAMP)
+    - Faster integer comparisons
+    - Easier timezone handling in application code
 - **Datetime format** is better for:
-  - Human-readable timestamps in database queries
-  - Built-in MySQL date functions
-  - Dates beyond 2038 (Unix timestamps are limited to 1970-01-01 to 2038-01-19)
+    - Human-readable timestamps in database queries
+    - Built-in MySQL date functions
+    - Dates beyond 2038 (Unix timestamps are limited to 1970-01-01 to 2038-01-19)
 
 ## Usage Examples
 
@@ -470,21 +560,21 @@ For example:
 
 ```php
 $qb->table('users')->create(function (TableBuilder $table) {
-  // Use the id() shorthand for primary key
-  $table->id();
-  $table->addColumn('name', 'varchar')->length(255)->notNull();
-  $table->addColumn('email', 'varchar')->length(255)->notNull();
-  $table->addColumn('status', 'varchar')->length(20)->notNull();
+    // Use the id() shorthand for primary key
+    $table->id();
+    $table->addColumn('name', 'varchar')->length(255)->notNull();
+    $table->addColumn('email', 'varchar')->length(255)->notNull();
+    $table->addColumn('status', 'varchar')->length(20)->notNull();
 
-  // Add automatic timestamp management
-  $table->timestamps();
+    // Add automatic timestamp management
+    $table->timestamps();
 
-  // Add unique constraint
-  $table->addUnique('email');
+    // Add unique constraint
+    $table->addUnique('email');
 
-  // Add indexes for better query performance
-  $table->addIndex('status');
-  $table->addIndex('name');
+    // Add indexes for better query performance
+    $table->addIndex('status');
+    $table->addIndex('name');
 });
 ```
 
@@ -492,13 +582,13 @@ $qb->table('users')->create(function (TableBuilder $table) {
 
 ```php
 $qb->table('posts')->create(function (TableBuilder $table) {
-  // Custom primary key name with bigint type
-  $table->id('post_id', 'bigint');
-  $table->addColumn('title', 'varchar')->length(255)->notNull();
-  $table->addColumn('content', 'text');
+    // Custom primary key name with bigint type
+    $table->id('post_id', 'bigint');
+    $table->addColumn('title', 'varchar')->length(255)->notNull();
+    $table->addColumn('content', 'text');
 
-  // Use custom timestamp column names
-  $table->timestamps('created_on', 'modified_on');
+    // Use custom timestamp column names
+    $table->timestamps('created_on', 'modified_on');
 });
 ```
 
@@ -506,12 +596,12 @@ $qb->table('posts')->create(function (TableBuilder $table) {
 
 ```php
 $qb->table('posts')->create(function (TableBuilder $table) {
-  $table->addColumn('id', 'int')->primaryKey();
-  $table->addColumn('title', 'varchar')->length(255)->notNull();
-  $table->addColumn('content', 'text');
+    $table->addColumn('id', 'int')->primaryKey();
+    $table->addColumn('title', 'varchar')->length(255)->notNull();
+    $table->addColumn('content', 'text');
 
-  // Use default Unix timestamp format (recommended)
-  $table->timestamps('created_at', 'updated_at');
+    // Use default Unix timestamp format (recommended)
+    $table->timestamps('created_at', 'updated_at');
 });
 ```
 
@@ -526,12 +616,12 @@ This creates:
 
 ```php
 $qb->table('legacy_posts')->create(function (TableBuilder $table) {
-  $table->addColumn('id', 'int')->primaryKey();
-  $table->addColumn('title', 'varchar')->length(255)->notNull();
-  $table->addColumn('content', 'text');
+    $table->addColumn('id', 'int')->primaryKey();
+    $table->addColumn('title', 'varchar')->length(255)->notNull();
+    $table->addColumn('content', 'text');
 
-  // Use datetime format for human-readable timestamps
-  $table->timestamps('created_on', 'modified_on', 'datetime');
+    // Use datetime format for human-readable timestamps
+    $table->timestamps('created_on', 'modified_on', 'datetime');
 });
 ```
 
@@ -546,19 +636,19 @@ This creates:
 
 ```php
 $qb->table('users')->alter(function (TableBuilder $table) {
-  $table->addColumn('phone', 'varchar')->length(20);
-  $table->changeColumn('name')->length(300);
-  $table->dropColumn('old_field');
+    $table->addColumn('phone', 'varchar')->length(20);
+    $table->changeColumn('name')->length(300);
+    $table->dropColumn('old_field');
 
-  // Add timestamp functionality to existing table
-  $table->timestamps();
+    // Add timestamp functionality to existing table
+    $table->timestamps();
 
-  $table->addForeignKey('role_id', 'roles', 'id', 'SET NULL');
-  $table->dropForeignKeyByIdentifier('old_fk_constraint');
+    $table->addForeignKey('role_id', 'roles', 'id', 'SET NULL');
+    $table->dropForeignKeyByIdentifier('old_fk_constraint');
 
-  // Add new indexes
-  $table->addIndex('phone');
-  $table->dropIndex('old_index_column');
+    // Add new indexes
+    $table->addIndex('phone');
+    $table->dropIndex('old_index_column');
 });
 ```
 
@@ -567,26 +657,26 @@ $qb->table('users')->alter(function (TableBuilder $table) {
 ```php
 // Remove timestamp functionality from a table
 $qb->table('users')->alter(function (TableBuilder $table) {
-  $table->dropColumn('created');
-  $table->dropColumn('updated');
-  $table->dropTimestampTriggers();
+    $table->dropColumn('created');
+    $table->dropColumn('updated');
+    $table->dropTimestampTriggers();
 });
 
 // Update timestamp trigger (recreate with new column names)
 $qb->table('posts')->alter(function (TableBuilder $table) {
-  $table->dropTimestampTriggers();
-  $table->timestamps('date_created', 'date_modified');
+    $table->dropTimestampTriggers();
+    $table->timestamps('date_created', 'date_modified');
 });
 
 // Convert from datetime to Unix timestamp format
 $qb->table('users')->alter(function (TableBuilder $table) {
-  // Drop old datetime columns and triggers
-  $table->dropTimestampTriggers();
-  $table->dropColumn('created');
-  $table->dropColumn('updated');
+    // Drop old datetime columns and triggers
+    $table->dropTimestampTriggers();
+    $table->dropColumn('created');
+    $table->dropColumn('updated');
 
-  // Add new Unix timestamp columns (default format)
-  $table->timestamps('created_at', 'updated_at');
+    // Add new Unix timestamp columns (default format)
+    $table->timestamps('created_at', 'updated_at');
 });
 ```
 
@@ -595,60 +685,59 @@ $qb->table('users')->alter(function (TableBuilder $table) {
 ```php
 // Create table with multiple indexes
 $qb->table('posts')->create(function (TableBuilder $table) {
-  $table->id();
-  $table->addColumn('user_id', 'int')->notNull();
-  $table->addColumn('category', 'varchar')->length(100)->notNull();
-  $table->addColumn('status', 'varchar')->length(20)->notNull();
-  $table->addColumn('slug', 'varchar')->length(255)->notNull();
-  $table->addColumn('title', 'varchar')->length(255)->notNull();
-  $table->timestamps();
+    $table->id();
+    $table->addColumn('user_id', 'int')->notNull();
+    $table->addColumn('category', 'varchar')->length(100)->notNull();
+    $table->addColumn('status', 'varchar')->length(20)->notNull();
+    $table->addColumn('slug', 'varchar')->length(255)->notNull();
+    $table->addColumn('title', 'varchar')->length(255)->notNull();
+    $table->timestamps();
 
-  // Foreign key
-  $table->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+    // Foreign key
+    $table->addForeignKey('user_id', 'users', 'id', 'CASCADE');
 
-  // Unique constraint for slug
-  $table->addUnique('slug');
+    // Unique constraint for slug
+    $table->addUnique('slug');
 
-  // Single column indexes for frequently queried fields
-  $table->addIndex('status');
-  $table->addIndex('category');
+    // Single column indexes for frequently queried fields
+    $table->addIndex('status');
+    $table->addIndex('category');
 
-  // Composite index for queries filtering by user and status
-  $table->addIndex(['user_id', 'status']);
+    // Composite index for queries filtering by user and status
+    $table->addIndex(['user_id', 'status']);
 
-  // Composite index with custom identifier
-  $table
-    ->addIndex(['category', 'status', 'created'])
-    ->identifier('idx_posts_category_filter');
+    // Composite index with custom identifier
+    $table
+        ->addIndex(['category', 'status', 'created'])
+        ->identifier('idx_posts_category_filter');
 });
 
 // Alter table to add/remove indexes
 $qb->table('posts')->alter(function (TableBuilder $table) {
-  // Add new index
-  $table->addIndex('title');
+    // Add new index
+    $table->addIndex('title');
 
-  // Drop old index
-  $table->dropIndex('category');
+    // Drop old index
+    $table->dropIndex('category');
 
-  // Drop composite index
-  $table->dropIndex(['user_id', 'status']);
+    // Drop composite index
+    $table->dropIndex(['user_id', 'status']);
 
-  // Drop index by custom identifier
-  $table->dropIndexByIdentifier('idx_posts_category_filter');
+    // Drop index by custom identifier
+    $table->dropIndexByIdentifier('idx_posts_category_filter');
 
-  // Add new composite index with better column order
-  $table
-    ->addIndex(['status', 'user_id', 'created'])
-    ->identifier('idx_posts_optimized');
+    // Add new composite index with better column order
+    $table
+        ->addIndex(['status', 'user_id', 'created'])
+        ->identifier('idx_posts_optimized');
 });
 ```
 
 ### Complex Join
 
 ```php
-$qb
-  ->leftJoin('user_profiles')
-  ->as('profile')
-  ->on('users.id', '=', 'profile.user_id')
-  ->on('profile.is_active', '=', '1');
+$qb->leftJoin('user_profiles')
+    ->as('profile')
+    ->on('users.id', '=', 'profile.user_id')
+    ->on('profile.is_active', '=', '1');
 ```
