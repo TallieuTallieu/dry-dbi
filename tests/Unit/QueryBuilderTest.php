@@ -597,7 +597,8 @@ describe('QueryBuilder - RENAME TABLE', function () {
         expect($query)
             ->toContain('`users`')
             ->toContain('`new_users`')
-            ->not->toContain('users TO new_users');
+            ->not()
+            ->toContain('users TO new_users');
     });
 });
 

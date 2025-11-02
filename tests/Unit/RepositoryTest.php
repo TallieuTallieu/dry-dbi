@@ -248,7 +248,8 @@ describe('BaseRepository', function () {
         expect(MockModel::$lastQuery)
             ->toContain('LIMIT ?')
             ->and(MockModel::$lastQuery)
-            ->not->toContain('OFFSET')
+            ->not()
+            ->toContain('OFFSET')
             ->and(MockModel::$lastParams)
             ->toBe([15]);
     });
@@ -260,7 +261,8 @@ describe('BaseRepository', function () {
         expect(MockModel::$lastQuery)
             ->toContain('LIMIT ?')
             ->and(MockModel::$lastQuery)
-            ->not->toContain('OFFSET')
+            ->not()
+            ->toContain('OFFSET')
             ->and(MockModel::$lastParams)
             ->toBe([30]);
     });

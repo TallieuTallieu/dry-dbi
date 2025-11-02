@@ -267,7 +267,8 @@ describe('TableBuilder id() Shorthand', function () {
 
         expect($query)
             ->toContain('`setting_id` INT(11) NOT NULL PRIMARY KEY')
-            ->not->toContain('AUTO_INCREMENT');
+            ->not()
+            ->toContain('AUTO_INCREMENT');
     });
 
     it('maintains fluent interface', function () {
@@ -351,11 +352,14 @@ describe('TableBuilder seo() Shorthand', function () {
         $query = $tableBuilder->getQuery();
 
         expect($query)
-            ->not->toContain('`seo_title`')
+            ->not()
+            ->toContain('`seo_title`')
             ->toContain('`meta_description` VARCHAR(255) NULL')
-            ->not->toContain('`seo_change_frequency`')
+            ->not()
+            ->toContain('`seo_change_frequency`')
             ->toContain('`photo_id` INT(11) NOT NULL')
-            ->not->toContain('`seo_priority`')
+            ->not()
+            ->toContain('`seo_priority`')
             ->toContain(
                 'CONSTRAINT `fk_articles_photo_id_dry_media_file_id` FOREIGN KEY (`photo_id`) REFERENCES `dry_media_file` (`id`)'
             );
@@ -371,11 +375,14 @@ describe('TableBuilder seo() Shorthand', function () {
         $query = $tableBuilder->getQuery();
 
         expect($query)
-            ->not->toContain('seo_title')
+            ->not()
+            ->toContain('seo_title')
             ->toContain('`description` VARCHAR(255) NULL')
-            ->not->toContain('seo_change_frequency')
+            ->not()
+            ->toContain('seo_change_frequency')
             ->toContain('`image` INT(11) NOT NULL')
-            ->not->toContain('seo_priority');
+            ->not()
+            ->toContain('seo_priority');
     });
 
     it('can skip all columns', function () {
@@ -388,12 +395,18 @@ describe('TableBuilder seo() Shorthand', function () {
         $query = $tableBuilder->getQuery();
 
         expect($query)
-            ->not->toContain('seo_title')
-            ->not->toContain('seo_description')
-            ->not->toContain('seo_change_frequency')
-            ->not->toContain('seo_photo')
-            ->not->toContain('seo_priority')
-            ->not->toContain('FOREIGN KEY');
+            ->not()
+            ->toContain('seo_title')
+            ->not()
+            ->toContain('seo_description')
+            ->not()
+            ->toContain('seo_change_frequency')
+            ->not()
+            ->toContain('seo_photo')
+            ->not()
+            ->toContain('seo_priority')
+            ->not()
+            ->toContain('FOREIGN KEY');
     });
 
     it('maintains fluent interface', function () {
@@ -488,9 +501,7 @@ describe('TableBuilder dropSeo() Shorthand', function () {
             ->toContain('DROP COLUMN `seo_change_frequency`')
             ->toContain('DROP COLUMN `seo_photo`')
             ->toContain('DROP COLUMN `seo_priority`')
-            ->toContain(
-                'DROP INDEX `fk_pages_seo_photo_dry_media_file_id`'
-            )
+            ->toContain('DROP INDEX `fk_pages_seo_photo_dry_media_file_id`')
             ->toContain(
                 'DROP FOREIGN KEY `fk_pages_seo_photo_dry_media_file_id`'
             );
@@ -516,9 +527,7 @@ describe('TableBuilder dropSeo() Shorthand', function () {
             ->toContain('DROP COLUMN `sitemap_freq`')
             ->toContain('DROP COLUMN `image_id`')
             ->toContain('DROP COLUMN `sitemap_priority`')
-            ->toContain(
-                'DROP INDEX `fk_products_image_id_dry_media_file_id`'
-            )
+            ->toContain('DROP INDEX `fk_products_image_id_dry_media_file_id`')
             ->toContain(
                 'DROP FOREIGN KEY `fk_products_image_id_dry_media_file_id`'
             );
@@ -527,17 +536,26 @@ describe('TableBuilder dropSeo() Shorthand', function () {
     it('skips columns set to null', function () {
         $tableBuilder = new TableBuilder(true);
         $tableBuilder->table('articles');
-        $tableBuilder->dropSeo(null, 'meta_description', null, 'photo_id', null);
+        $tableBuilder->dropSeo(
+            null,
+            'meta_description',
+            null,
+            'photo_id',
+            null
+        );
         $tableBuilder->build();
 
         $query = $tableBuilder->getQuery();
 
         expect($query)
-            ->not->toContain('DROP COLUMN `seo_title`')
+            ->not()
+            ->toContain('DROP COLUMN `seo_title`')
             ->toContain('DROP COLUMN `meta_description`')
-            ->not->toContain('DROP COLUMN `seo_change_frequency`')
+            ->not()
+            ->toContain('DROP COLUMN `seo_change_frequency`')
             ->toContain('DROP COLUMN `photo_id`')
-            ->not->toContain('DROP COLUMN `seo_priority`')
+            ->not()
+            ->toContain('DROP COLUMN `seo_priority`')
             ->toContain(
                 'DROP FOREIGN KEY `fk_articles_photo_id_dry_media_file_id`'
             );
@@ -552,11 +570,14 @@ describe('TableBuilder dropSeo() Shorthand', function () {
         $query = $tableBuilder->getQuery();
 
         expect($query)
-            ->not->toContain('DROP COLUMN `seo_title`')
+            ->not()
+            ->toContain('DROP COLUMN `seo_title`')
             ->toContain('DROP COLUMN `description`')
-            ->not->toContain('DROP COLUMN `seo_change_frequency`')
+            ->not()
+            ->toContain('DROP COLUMN `seo_change_frequency`')
             ->toContain('DROP COLUMN `image`')
-            ->not->toContain('DROP COLUMN `seo_priority`');
+            ->not()
+            ->toContain('DROP COLUMN `seo_priority`');
     });
 
     it('can skip all columns', function () {
@@ -568,7 +589,7 @@ describe('TableBuilder dropSeo() Shorthand', function () {
         $query = $tableBuilder->getQuery();
 
         // Query should be essentially empty (just ALTER TABLE)
-        expect($query)->not->toContain('DROP COLUMN');
+        expect($query)->not()->toContain('DROP COLUMN');
     });
 
     it('maintains fluent interface', function () {
@@ -594,7 +615,9 @@ describe('TableBuilder dropSeo() Shorthand', function () {
         expect($query)
             ->toContain('DROP COLUMN `seo_title`')
             ->toContain('DROP COLUMN `seo_photo`')
-            ->toContain('DROP FOREIGN KEY `fk_pages_seo_photo_dry_media_file_id`')
+            ->toContain(
+                'DROP FOREIGN KEY `fk_pages_seo_photo_dry_media_file_id`'
+            )
             ->toContain('ADD `new_field` VARCHAR(100) NOT NULL');
     });
 
