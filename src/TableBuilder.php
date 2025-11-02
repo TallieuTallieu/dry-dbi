@@ -330,7 +330,9 @@ class TableBuilder extends BuildHandler
         }
 
         if (!empty($descriptionColumn)) {
-            $this->addColumn($descriptionColumn, 'varchar')->length(255)->null();
+            $this->addColumn($descriptionColumn, 'varchar')
+                ->length(255)
+                ->null();
         }
 
         if (!empty($changeFrequencyColumn)) {
