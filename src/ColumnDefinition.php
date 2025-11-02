@@ -47,6 +47,11 @@ class ColumnDefinition
     /**
      * @var bool
      */
+    private bool $defaultIsExpression = false;
+
+    /**
+     * @var bool
+     */
     private bool $autoIncrement = false;
 
     /**
@@ -181,7 +186,13 @@ class ColumnDefinition
      */
     public function default($defaultVal): self
     {
-        $this->defaultVal = $defaultVal;
+        if ($defaultVal instanceof Raw) {
+            $this->defaultVal = $defaultVal->getValue();
+            $this->defaultIsExpression = true;
+        } else {
+            $this->defaultVal = $defaultVal;
+            $this->defaultIsExpression = false;
+        }
         return $this;
     }
 
@@ -230,7 +241,10 @@ class ColumnDefinition
         $statement[] = $this->null ? 'NULL' : 'NOT NULL';
 
         if ($this->defaultVal !== false) {
-            if (is_string($this->defaultVal)) {
+            if ($this->defaultIsExpression) {
+                // For expressions (like JSON_ARRAY(), JSON_OBJECT()), use as-is wrapped in parentheses
+                $statement[] = 'DEFAULT (' . (string) $this->defaultVal . ')';
+            } elseif (is_string($this->defaultVal)) {
                 // Use proper SQL escaping by replacing single quotes with doubled quotes
                 $escapedValue = str_replace("'", "''", $this->defaultVal);
                 $statement[] = "DEFAULT '" . $escapedValue . "'";
