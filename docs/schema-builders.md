@@ -378,13 +378,53 @@ Sets the column's NULL constraint.
 public function default($defaultVal): self
 ```
 
-Sets a default value for the column.
+Sets a default value for the column. Supports literal values and SQL expressions.
+
+**Literal Values:**
 
 ```php
-$column->default('active');
-$column->default(0);
-$column->default(null);
+$column->default('active'); // String literal
+$column->default(0); // Numeric literal
+$column->default(null); // NULL value
 ```
+
+**Expression-Based Defaults (for JSON, TEXT, BLOB, GEOMETRY):**
+
+MySQL requires BLOB, TEXT, GEOMETRY, and JSON data types to use expressions (wrapped in parentheses) for default values. Use the `Raw` class to specify SQL expressions:
+
+```php
+use Tnt\Dbi\Raw;
+
+// JSON column with empty array default
+$column->type('json')->notNull()->default(new Raw('JSON_ARRAY()'));
+// Generates: `column` JSON NOT NULL DEFAULT (JSON_ARRAY())
+
+// JSON column with empty object default
+$column->type('json')->notNull()->default(new Raw('JSON_OBJECT()'));
+// Generates: `column` JSON NOT NULL DEFAULT (JSON_OBJECT())
+
+// JSON column with pre-populated object
+$column
+    ->type('json')
+    ->notNull()
+    ->default(new Raw("JSON_OBJECT('theme', 'light', 'notifications', true)"));
+// Generates: `column` JSON NOT NULL DEFAULT (JSON_OBJECT('theme', 'light', 'notifications', true))
+
+// TEXT column with expression default
+$column->type('text')->notNull()->default(new Raw('(UUID())'));
+// Generates: `column` TEXT NOT NULL DEFAULT ((UUID()))
+
+// BLOB column with expression default
+$column->type('blob')->notNull()->default(new Raw('(UNHEX(""))'));
+// Generates: `column` BLOB NOT NULL DEFAULT ((UNHEX("")))
+```
+
+**Important Notes:**
+
+- Expression-based defaults are automatically wrapped in parentheses as required by MySQL
+- Regular string defaults are quoted and escaped automatically
+- Expression defaults bypass quoting and escaping (use `Raw` for SQL functions only)
+- This feature is essential for JSON columns which cannot have literal string defaults
 
 ### Column Modification
 
@@ -732,6 +772,50 @@ $qb->table('posts')->alter(function (TableBuilder $table) {
         ->identifier('idx_posts_optimized');
 });
 ```
+
+### Creating a Table with JSON Columns
+
+```php
+use Tnt\Dbi\Raw;
+
+$qb->table('user_settings')->create(function (TableBuilder $table) {
+    $table->id();
+    $table->addColumn('user_id', 'int')->notNull();
+
+    // JSON column with empty array default
+    $table
+        ->addColumn('tags', 'json')
+        ->notNull()
+        ->default(new Raw('JSON_ARRAY()'));
+
+    // JSON column with empty object default
+    $table
+        ->addColumn('metadata', 'json')
+        ->notNull()
+        ->default(new Raw('JSON_OBJECT()'));
+
+    // JSON column with pre-populated default values
+    $table
+        ->addColumn('preferences', 'json')
+        ->notNull()
+        ->default(
+            new Raw(
+                "JSON_OBJECT('theme', 'light', 'notifications', true, 'language', 'en')"
+            )
+        );
+
+    // Nullable JSON column with default
+    $table
+        ->addColumn('custom_data', 'json')
+        ->null()
+        ->default(new Raw('JSON_ARRAY()'));
+
+    $table->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+    $table->timestamps();
+});
+```
+
+This creates a table with properly configured JSON columns that have expression-based defaults, which is required by MySQL for BLOB, TEXT, GEOMETRY, and JSON data types.
 
 ### Complex Join
 
