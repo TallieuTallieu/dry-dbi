@@ -1,6 +1,7 @@
 <?php
 
 use Tnt\Dbi\ColumnDefinition;
+use Tnt\Dbi\Raw;
 
 describe('ColumnDefinition', function () {
     it('creates basic column definition', function () {
@@ -214,5 +215,94 @@ describe('ColumnDefinition', function () {
         $column->type('int');
 
         expect($column->getString())->toContain('`simple` INT');
+    });
+
+    it('creates JSON column with JSON_ARRAY() default expression', function () {
+        $column = new ColumnDefinition('tags');
+        $column->type('json')->notNull()->default(new Raw('JSON_ARRAY()'));
+
+        expect($column->getString())->toBe(
+            '`tags` JSON NOT NULL DEFAULT (JSON_ARRAY())'
+        );
+    });
+
+    it('creates JSON column with JSON_OBJECT() default expression', function () {
+        $column = new ColumnDefinition('metadata');
+        $column->type('json')->notNull()->default(new Raw('JSON_OBJECT()'));
+
+        expect($column->getString())->toBe(
+            '`metadata` JSON NOT NULL DEFAULT (JSON_OBJECT())'
+        );
+    });
+
+    it('creates JSON column with complex JSON_OBJECT() expression', function () {
+        $column = new ColumnDefinition('settings');
+        $column
+            ->type('json')
+            ->notNull()
+            ->default(
+                new Raw("JSON_OBJECT('theme', 'light', 'notifications', true)")
+            );
+
+        expect($column->getString())->toBe(
+            "`settings` JSON NOT NULL DEFAULT (JSON_OBJECT('theme', 'light', 'notifications', true))"
+        );
+    });
+
+    it('creates TEXT column with expression default', function () {
+        $column = new ColumnDefinition('content');
+        $column->type('text')->notNull()->default(new Raw('(UUID())'));
+
+        expect($column->getString())->toBe(
+            '`content` TEXT NOT NULL DEFAULT ((UUID()))'
+        );
+    });
+
+    it('creates BLOB column with expression default', function () {
+        $column = new ColumnDefinition('data');
+        $column->type('blob')->notNull()->default(new Raw('(UNHEX(""))'));
+
+        expect($column->getString())->toBe(
+            '`data` BLOB NOT NULL DEFAULT ((UNHEX("")))'
+        );
+    });
+
+    it('handles nullable JSON column with JSON_ARRAY() default', function () {
+        $column = new ColumnDefinition('optional_tags');
+        $column->type('json')->null()->default(new Raw('JSON_ARRAY()'));
+
+        expect($column->getString())->toBe(
+            '`optional_tags` JSON NULL DEFAULT (JSON_ARRAY())'
+        );
+    });
+
+    it('creates JSON column with nested JSON_ARRAY() expression', function () {
+        $column = new ColumnDefinition('matrix');
+        $column
+            ->type('json')
+            ->notNull()
+            ->default(new Raw('JSON_ARRAY(JSON_ARRAY(), JSON_ARRAY())'));
+
+        expect($column->getString())->toBe(
+            '`matrix` JSON NOT NULL DEFAULT (JSON_ARRAY(JSON_ARRAY(), JSON_ARRAY()))'
+        );
+    });
+
+    it('distinguishes between string and expression defaults', function () {
+        $stringColumn = new ColumnDefinition('string_col');
+        $stringColumn->type('varchar')->length(100)->notNull()->default('test');
+
+        $expressionColumn = new ColumnDefinition('expr_col');
+        $expressionColumn
+            ->type('json')
+            ->notNull()
+            ->default(new Raw('JSON_ARRAY()'));
+
+        expect($stringColumn->getString())->toBe(
+            "`string_col` VARCHAR(100) NOT NULL DEFAULT 'test'"
+        );
+        expect($expressionColumn->getString())->toBe(
+            '`expr_col` JSON NOT NULL DEFAULT (JSON_ARRAY())'
+        );
     });
 });
