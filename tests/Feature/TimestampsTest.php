@@ -348,7 +348,9 @@ describe('TableBuilder Timestamps', function () {
             ->toContain('`created` TIMESTAMP NOT NULL')
             ->toContain('`updated` TIMESTAMP NOT NULL')
             ->toContain('CURRENT_TIMESTAMP')
-            ->not->toContain('INT UNSIGNED')
-            ->not->toContain('UNIX_TIMESTAMP()');
+            ->not()
+            ->toContain('INT UNSIGNED')
+            ->not()
+            ->toContain('UNIX_TIMESTAMP()');
     });
 });

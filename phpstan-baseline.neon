@@ -85,18 +85,6 @@ parameters:
 			path: src/TableBuilder.php
 
 		-
-			message: '#^Access to an undefined property Pest\\Mixins\\Expectation\<string\|null\>\:\:\$not\.$#'
-			identifier: property.notFound
-			count: 1
-			path: tests/Feature/TableBuilderTest.php
-
-		-
-			message: '#^Access to an undefined property Pest\\Mixins\\Expectation\<string\|null\>\:\:\$not\.$#'
-			identifier: property.notFound
-			count: 1
-			path: tests/Feature/TimestampsTest.php
-
-		-
 			message: '#^Static property MockModel\:\:\$lastParams \(array\<int, mixed\>\) does not accept array\<int\|string, mixed\>\.$#'
 			identifier: assign.propertyType
 			count: 2

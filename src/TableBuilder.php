@@ -301,6 +301,107 @@ class TableBuilder extends BuildHandler
     }
 
     /**
+     * Shorthand method for adding SEO-related columns
+     *
+     * Adds the following columns (if not set to empty string or null):
+     * - seo_title VARCHAR(255) NULL
+     * - seo_description VARCHAR(255) NULL
+     * - seo_change_frequency VARCHAR(255) NULL
+     * - seo_photo INT(11) with foreign key to dry_media_file
+     * - seo_priority DECIMAL(10) NULL
+     *
+     * @param string|null $titleColumn Column name for SEO title (default: 'seo_title', use null or empty string to skip)
+     * @param string|null $descriptionColumn Column name for SEO description (default: 'seo_description', use null or empty string to skip)
+     * @param string|null $changeFrequencyColumn Column name for SEO change frequency (default: 'seo_change_frequency', use null or empty string to skip)
+     * @param string|null $photoColumn Column name for SEO photo (default: 'seo_photo', use null or empty string to skip)
+     * @param string|null $priorityColumn Column name for SEO priority (default: 'seo_priority', use null or empty string to skip)
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function seo(
+        ?string $titleColumn = 'seo_title',
+        ?string $descriptionColumn = 'seo_description',
+        ?string $changeFrequencyColumn = 'seo_change_frequency',
+        ?string $photoColumn = 'seo_photo',
+        ?string $priorityColumn = 'seo_priority'
+    ): self {
+        if (!empty($titleColumn)) {
+            $this->addColumn($titleColumn, 'varchar')->length(255)->null();
+        }
+
+        if (!empty($descriptionColumn)) {
+            $this->addColumn($descriptionColumn, 'varchar')
+                ->length(255)
+                ->null();
+        }
+
+        if (!empty($changeFrequencyColumn)) {
+            $this->addColumn($changeFrequencyColumn, 'varchar')
+                ->length(255)
+                ->null();
+        }
+
+        if (!empty($photoColumn)) {
+            $this->addColumn($photoColumn, 'int')->length(11);
+            $this->addForeignKey($photoColumn, 'dry_media_file', 'id');
+        }
+
+        if (!empty($priorityColumn)) {
+            $this->addColumn($priorityColumn, 'decimal')->length(10)->null();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Shorthand method for dropping SEO-related columns
+     *
+     * Drops the following columns and constraints (if not set to empty string or null):
+     * - seo_title
+     * - seo_description
+     * - seo_change_frequency
+     * - seo_photo (with foreign key constraint)
+     * - seo_priority
+     *
+     * @param string|null $titleColumn Column name for SEO title (default: 'seo_title', use null or empty string to skip)
+     * @param string|null $descriptionColumn Column name for SEO description (default: 'seo_description', use null or empty string to skip)
+     * @param string|null $changeFrequencyColumn Column name for SEO change frequency (default: 'seo_change_frequency', use null or empty string to skip)
+     * @param string|null $photoColumn Column name for SEO photo (default: 'seo_photo', use null or empty string to skip)
+     * @param string|null $priorityColumn Column name for SEO priority (default: 'seo_priority', use null or empty string to skip)
+     * @return $this
+     */
+    public function dropSeo(
+        ?string $titleColumn = 'seo_title',
+        ?string $descriptionColumn = 'seo_description',
+        ?string $changeFrequencyColumn = 'seo_change_frequency',
+        ?string $photoColumn = 'seo_photo',
+        ?string $priorityColumn = 'seo_priority'
+    ): self {
+        if (!empty($photoColumn)) {
+            $this->dropForeignKey($photoColumn, 'dry_media_file', 'id');
+            $this->dropColumn($photoColumn);
+        }
+
+        if (!empty($titleColumn)) {
+            $this->dropColumn($titleColumn);
+        }
+
+        if (!empty($descriptionColumn)) {
+            $this->dropColumn($descriptionColumn);
+        }
+
+        if (!empty($changeFrequencyColumn)) {
+            $this->dropColumn($changeFrequencyColumn);
+        }
+
+        if (!empty($priorityColumn)) {
+            $this->dropColumn($priorityColumn);
+        }
+
+        return $this;
+    }
+
+    /**
      * @param string $triggerName
      * @return void
      */

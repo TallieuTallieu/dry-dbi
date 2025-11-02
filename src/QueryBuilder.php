@@ -574,6 +574,10 @@ class QueryBuilder extends BuildHandler
      */
     private function buildRename(): void
     {
+        if ($this->rename === null) {
+            return;
+        }
+
         $this->addToQuery(
             'RENAME TABLE ' .
                 $this->quote($this->getTable()) .
