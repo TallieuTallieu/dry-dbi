@@ -226,28 +226,36 @@ describe('ColumnDefinition', function () {
         );
     });
 
-    it('creates JSON column with JSON_OBJECT() default expression', function () {
-        $column = new ColumnDefinition('metadata');
-        $column->type('json')->notNull()->default(new Raw('JSON_OBJECT()'));
+    it(
+        'creates JSON column with JSON_OBJECT() default expression',
+        function () {
+            $column = new ColumnDefinition('metadata');
+            $column->type('json')->notNull()->default(new Raw('JSON_OBJECT()'));
 
-        expect($column->getString())->toBe(
-            '`metadata` JSON NOT NULL DEFAULT (JSON_OBJECT())'
-        );
-    });
-
-    it('creates JSON column with complex JSON_OBJECT() expression', function () {
-        $column = new ColumnDefinition('settings');
-        $column
-            ->type('json')
-            ->notNull()
-            ->default(
-                new Raw("JSON_OBJECT('theme', 'light', 'notifications', true)")
+            expect($column->getString())->toBe(
+                '`metadata` JSON NOT NULL DEFAULT (JSON_OBJECT())'
             );
+        }
+    );
 
-        expect($column->getString())->toBe(
-            "`settings` JSON NOT NULL DEFAULT (JSON_OBJECT('theme', 'light', 'notifications', true))"
-        );
-    });
+    it(
+        'creates JSON column with complex JSON_OBJECT() expression',
+        function () {
+            $column = new ColumnDefinition('settings');
+            $column
+                ->type('json')
+                ->notNull()
+                ->default(
+                    new Raw(
+                        "JSON_OBJECT('theme', 'light', 'notifications', true)"
+                    )
+                );
+
+            expect($column->getString())->toBe(
+                "`settings` JSON NOT NULL DEFAULT (JSON_OBJECT('theme', 'light', 'notifications', true))"
+            );
+        }
+    );
 
     it('creates TEXT column with expression default', function () {
         $column = new ColumnDefinition('content');
