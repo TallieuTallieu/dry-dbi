@@ -51,7 +51,7 @@ class TableBuilder extends BuildHandler
     private array $addUniques = [];
 
     /***
-     * @var array<int, string>
+     * @var array<int, UniqueDefinition|string>
      */
     private array $dropUniques = [];
 
@@ -215,27 +215,36 @@ class TableBuilder extends BuildHandler
     }
 
     /**
-     * @param string $column
+     * @param string|array<int, string> $columns
      * @return UniqueDefinition
      */
-    public function addUnique(string $column): UniqueDefinition
+    public function addUnique(string|array $columns): UniqueDefinition
     {
-        $unique = new UniqueDefinition($column);
+        $unique = new UniqueDefinition($columns);
         $this->addUniques[] = $unique;
 
         return $unique;
     }
 
     /**
-     * @param string $column
+     * @param string|array<int, string> $columns
      * @return UniqueDefinition
      */
-    public function dropUnique(string $column): UniqueDefinition
+    public function dropUnique(string|array $columns): UniqueDefinition
     {
-        $unique = new UniqueDefinition($column);
+        $unique = new UniqueDefinition($columns);
         $this->dropUniques[] = $unique;
 
         return $unique;
+    }
+
+    /**
+     * @param string $identifier
+     * @return void
+     */
+    public function dropUniqueByIdentifier(string $identifier): void
+    {
+        $this->dropUniques[] = $identifier;
     }
 
     /**
@@ -479,8 +488,14 @@ class TableBuilder extends BuildHandler
             }
 
             foreach ($this->dropUniques as $unique) {
-                $columnStatement[] =
-                    'DROP INDEX ' . $this->quote($unique->getIdentifier());
+                if (is_string($unique)) {
+                    // Drop by identifier string
+                    $columnStatement[] = 'DROP INDEX ' . $this->quote($unique);
+                } else {
+                    // Drop by UniqueDefinition object
+                    $columnStatement[] =
+                        'DROP INDEX ' . $this->quote($unique->getIdentifier());
+                }
             }
 
             foreach ($this->dropIndexes as $index) {
@@ -521,12 +536,16 @@ class TableBuilder extends BuildHandler
         }
 
         foreach ($this->addUniques as $unique) {
+            $columns = array_map(function ($col) {
+                return $this->quote($col);
+            }, $unique->getColumns());
+
             $columnStatement[] =
                 ($this->isAlter ? 'ADD ' : '') .
                 'CONSTRAINT ' .
                 $this->quote($unique->getIdentifier()) .
                 ' UNIQUE (' .
-                $this->quote($unique->getColumn()) .
+                implode(', ', $columns) .
                 ')';
         }
 
