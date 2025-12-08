@@ -260,22 +260,52 @@ Removes a foreign key by its identifier name.
 #### addUnique()
 
 ```php
-public function addUnique(string $column): UniqueDefinition
+public function addUnique(string|array $columns): UniqueDefinition
 ```
 
-Adds a unique constraint.
+Adds a unique constraint. Accepts either a single column name or an array of column names for composite unique constraints.
 
 ```php
+// Single column unique constraint
 $table->addUnique('email');
+
+// Composite unique constraint (multiple columns)
+$table->addUnique(['user_id', 'role_id']);
+
+// Custom identifier
+$table->addUnique('email')->identifier('custom_email_uq');
+
+// Composite with custom identifier
+$table->addUnique(['user_id', 'plan_id'])->identifier('uq_user_subscription');
 ```
 
 #### dropUnique()
 
 ```php
-public function dropUnique(string $column): UniqueDefinition
+public function dropUnique(string|array $columns): UniqueDefinition
 ```
 
-Removes a unique constraint (ALTER TABLE only).
+Removes a unique constraint (ALTER TABLE only). Accepts either a single column name or an array of column names.
+
+```php
+// Drop single column unique constraint
+$table->dropUnique('email');
+
+// Drop composite unique constraint
+$table->dropUnique(['user_id', 'role_id']);
+```
+
+#### dropUniqueByIdentifier()
+
+```php
+public function dropUniqueByIdentifier(string $identifier): void
+```
+
+Removes a unique constraint by its identifier name (ALTER TABLE only).
+
+```php
+$table->dropUniqueByIdentifier('uq_user_subscription');
+```
 
 ### Index Operations
 
@@ -509,9 +539,41 @@ Sets a custom identifier name for the foreign key.
 
 ### UniqueDefinition
 
-Represents a unique constraint.
+Represents a unique constraint. Supports both single-column and composite (multi-column) unique constraints.
 
-**Auto-generated identifier format:** `uq_{column}`
+#### identifier()
+
+```php
+public function identifier(string $identifierName): self
+```
+
+Sets a custom identifier name for the unique constraint.
+
+**Auto-generated identifier format:** `uq_{column}` or `uq_{column1}_{column2}_{...}` for composite constraints
+
+#### getColumns()
+
+```php
+public function getColumns(): array
+```
+
+Returns the array of column names included in the unique constraint.
+
+#### isComposite()
+
+```php
+public function isComposite(): bool
+```
+
+Returns `true` if the constraint spans multiple columns, `false` for single-column constraints.
+
+```php
+$unique = $table->addUnique(['user_id', 'role_id']);
+$unique->isComposite(); // true
+
+$unique = $table->addUnique('email');
+$unique->isComposite(); // false
+```
 
 ### IndexDefinition
 
@@ -717,6 +779,47 @@ $qb->table('users')->alter(function (TableBuilder $table) {
 
     // Add new Unix timestamp columns (default format)
     $table->timestamps('created_at', 'updated_at');
+});
+```
+
+### Working with Unique Constraints
+
+```php
+// Create table with unique constraints
+$qb->table('user_roles')->create(function (TableBuilder $table) {
+    $table->id();
+    $table->addColumn('user_id', 'int')->notNull();
+    $table->addColumn('role_id', 'int')->notNull();
+    $table->addColumn('email', 'varchar')->length(255)->notNull();
+    $table->timestamps();
+
+    // Single column unique constraint
+    $table->addUnique('email');
+
+    // Composite unique constraint (prevents duplicate user-role combinations)
+    $table->addUnique(['user_id', 'role_id']);
+
+    // Composite unique with custom identifier
+    $table->addUnique(['user_id', 'email'])->identifier('uq_user_email_combo');
+
+    // Foreign keys
+    $table->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+    $table->addForeignKey('role_id', 'roles', 'id', 'CASCADE');
+});
+
+// Alter table to add/remove unique constraints
+$qb->table('user_roles')->alter(function (TableBuilder $table) {
+    // Add new composite unique constraint
+    $table->addUnique(['user_id', 'role_id', 'created']);
+
+    // Drop single column unique constraint
+    $table->dropUnique('email');
+
+    // Drop composite unique constraint
+    $table->dropUnique(['user_id', 'role_id']);
+
+    // Drop unique constraint by custom identifier
+    $table->dropUniqueByIdentifier('uq_user_email_combo');
 });
 ```
 
