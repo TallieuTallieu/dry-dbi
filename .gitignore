@@ -13,3 +13,4 @@ docker/db/**
 TODO.md
 node_modules
 .yarn
+.env
