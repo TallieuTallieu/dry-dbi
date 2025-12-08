@@ -5,17 +5,32 @@ namespace Tnt\Dbi;
 class UniqueDefinition
 {
     /**
-     * @var string $column
+     * @var array<int, string>
      */
-    private $column;
+    private array $columns;
+
+    /**
+     * @var string|null
+     */
+    private ?string $identifierName = null;
 
     /**
      * UniqueDefinition constructor.
-     * @param string $column
+     * @param string|array<int, string> $columns
      */
-    public function __construct(string $column)
+    public function __construct(string|array $columns)
     {
-        $this->column = $column;
+        $this->columns = is_array($columns) ? $columns : [$columns];
+    }
+
+    /**
+     * @param string $identifierName
+     * @return $this
+     */
+    public function identifier(string $identifierName): self
+    {
+        $this->identifierName = $identifierName;
+        return $this;
     }
 
     /**
@@ -23,14 +38,36 @@ class UniqueDefinition
      */
     public function getIdentifier(): string
     {
-        return 'uq_' . $this->column;
+        if ($this->identifierName) {
+            return $this->identifierName;
+        }
+
+        return 'uq_' . implode('_', $this->columns);
     }
 
     /**
+     * @return array<int, string>
+     */
+    public function getColumns(): array
+    {
+        return $this->columns;
+    }
+
+    /**
+     * Get the column name (for backwards compatibility with single-column unique constraints)
      * @return string
+     * @deprecated Use getColumns() instead
      */
     public function getColumn(): string
     {
-        return $this->column;
+        return $this->columns[0];
+    }
+
+    /**
+     * @return bool
+     */
+    public function isComposite(): bool
+    {
+        return count($this->columns) > 1;
     }
 }
