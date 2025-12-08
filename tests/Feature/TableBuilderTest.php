@@ -838,3 +838,244 @@ describe('TableBuilder Index Management', function () {
             ->toContain('INDEX `idx_user_id_status` (`user_id`, `status`)');
     });
 });
+
+describe('TableBuilder Composite Unique Constraints', function () {
+    // Backwards compatibility tests
+    it(
+        'creates single column unique constraint (backwards compatible)',
+        function () {
+            $tableBuilder = new TableBuilder(false);
+            $tableBuilder->table('users');
+            $tableBuilder->addColumn('id', 'int')->primaryKey();
+            $tableBuilder
+                ->addColumn('email', 'varchar')
+                ->length(255)
+                ->notNull();
+            $tableBuilder->addUnique('email');
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)->toContain('CONSTRAINT `uq_email` UNIQUE (`email`)');
+        }
+    );
+
+    it(
+        'drops single column unique constraint (backwards compatible)',
+        function () {
+            $tableBuilder = new TableBuilder(true);
+            $tableBuilder->table('users');
+            $tableBuilder->dropUnique('email');
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)->toContain('DROP INDEX `uq_email`');
+        }
+    );
+
+    // Composite unique constraint tests
+    it('creates composite unique constraint with two columns', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('user_roles');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('role_id', 'int')->notNull();
+        $tableBuilder->addUnique(['user_id', 'role_id']);
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `uq_user_id_role_id` UNIQUE (`user_id`, `role_id`)'
+        );
+    });
+
+    it('creates composite unique constraint with three columns', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('permissions');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('resource', 'varchar')->length(100)->notNull();
+        $tableBuilder->addColumn('action', 'varchar')->length(50)->notNull();
+        $tableBuilder->addUnique(['user_id', 'resource', 'action']);
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `uq_user_id_resource_action` UNIQUE (`user_id`, `resource`, `action`)'
+        );
+    });
+
+    it(
+        'creates composite unique constraint with custom identifier',
+        function () {
+            $tableBuilder = new TableBuilder(false);
+            $tableBuilder->table('subscriptions');
+            $tableBuilder->addColumn('id', 'int')->primaryKey();
+            $tableBuilder->addColumn('user_id', 'int')->notNull();
+            $tableBuilder->addColumn('plan_id', 'int')->notNull();
+
+            $unique = $tableBuilder->addUnique(['user_id', 'plan_id']);
+            $unique->identifier('uq_user_subscription');
+
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)->toContain(
+                'CONSTRAINT `uq_user_subscription` UNIQUE (`user_id`, `plan_id`)'
+            );
+        }
+    );
+
+    it('creates multiple composite unique constraints', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('products');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('sku', 'varchar')->length(50)->notNull();
+        $tableBuilder->addColumn('vendor_id', 'int')->notNull();
+        $tableBuilder->addColumn('category_id', 'int')->notNull();
+        $tableBuilder->addColumn('name', 'varchar')->length(255)->notNull();
+        $tableBuilder->addUnique('sku');
+        $tableBuilder->addUnique(['vendor_id', 'name']);
+        $tableBuilder->addUnique(['category_id', 'name']);
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain('CONSTRAINT `uq_sku` UNIQUE (`sku`)')
+            ->toContain(
+                'CONSTRAINT `uq_vendor_id_name` UNIQUE (`vendor_id`, `name`)'
+            )
+            ->toContain(
+                'CONSTRAINT `uq_category_id_name` UNIQUE (`category_id`, `name`)'
+            );
+    });
+
+    it('adds composite unique constraint in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('user_roles');
+        $tableBuilder->addUnique(['user_id', 'role_id']);
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'ADD CONSTRAINT `uq_user_id_role_id` UNIQUE (`user_id`, `role_id`)'
+        );
+    });
+
+    it('drops composite unique constraint in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('user_roles');
+        $tableBuilder->dropUnique(['user_id', 'role_id']);
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain('DROP INDEX `uq_user_id_role_id`');
+    });
+
+    it('drops unique constraint by identifier', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('subscriptions');
+        $tableBuilder->dropUniqueByIdentifier('uq_user_subscription');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain('DROP INDEX `uq_user_subscription`');
+    });
+
+    it('handles multiple unique operations in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('products');
+        $tableBuilder->addUnique(['vendor_id', 'sku']);
+        $tableBuilder->dropUnique('old_unique_column');
+        $tableBuilder->dropUnique(['category_id', 'name']);
+        $tableBuilder->dropUniqueByIdentifier('custom_unique_constraint');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain('DROP INDEX `uq_old_unique_column`')
+            ->toContain('DROP INDEX `uq_category_id_name`')
+            ->toContain('DROP INDEX `custom_unique_constraint`')
+            ->toContain(
+                'ADD CONSTRAINT `uq_vendor_id_sku` UNIQUE (`vendor_id`, `sku`)'
+            );
+    });
+
+    it(
+        'combines composite unique constraints with other constraints',
+        function () {
+            $tableBuilder = new TableBuilder(false);
+            $tableBuilder->table('order_items');
+            $tableBuilder->addColumn('id', 'int')->primaryKey();
+            $tableBuilder->addColumn('order_id', 'int')->notNull();
+            $tableBuilder->addColumn('product_id', 'int')->notNull();
+            $tableBuilder->addColumn('quantity', 'int')->notNull();
+            $tableBuilder->addForeignKey('order_id', 'orders', 'id', 'CASCADE');
+            $tableBuilder->addForeignKey(
+                'product_id',
+                'products',
+                'id',
+                'RESTRICT'
+            );
+            $tableBuilder->addUnique(['order_id', 'product_id']);
+            $tableBuilder->addIndex('product_id');
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)
+                ->toContain(
+                    'CONSTRAINT `fk_order_items_order_id_orders_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE'
+                )
+                ->toContain(
+                    'CONSTRAINT `fk_order_items_product_id_products_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT'
+                )
+                ->toContain(
+                    'CONSTRAINT `uq_order_id_product_id` UNIQUE (`order_id`, `product_id`)'
+                )
+                ->toContain('INDEX `idx_product_id` (`product_id`)');
+        }
+    );
+
+    it('handles single column passed as array', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('email', 'varchar')->length(255)->notNull();
+        $tableBuilder->addUnique(['email']);
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        // Should produce same result as single string
+        expect($query)->toContain('CONSTRAINT `uq_email` UNIQUE (`email`)');
+    });
+
+    it('returns fluent interface from addUnique', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('test');
+
+        $unique = $tableBuilder->addUnique(['col1', 'col2']);
+
+        expect($unique)->toBeInstanceOf(\Tnt\Dbi\UniqueDefinition::class);
+    });
+
+    it('returns fluent interface from identifier method', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('test');
+
+        $unique = $tableBuilder->addUnique(['col1', 'col2']);
+        $result = $unique->identifier('custom_name');
+
+        expect($result)->toBe($unique);
+    });
+});
