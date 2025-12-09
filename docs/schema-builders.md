@@ -356,6 +356,85 @@ Removes an index by its identifier name (ALTER TABLE only).
 $table->dropIndexByIdentifier('custom_email_idx');
 ```
 
+### CHECK Constraint Operations
+
+CHECK constraints enforce data integrity by validating column values against specified conditions.
+
+#### addCheck()
+
+```php
+public function addCheck(string $column, string $expression): CheckDefinition
+```
+
+Adds a CHECK constraint to validate column values. The expression should be the full CHECK condition.
+
+```php
+// Simple IN constraint for status values
+$table->addCheck('status', '`status` IN (0, 1, 2, 3)');
+
+// Range constraint
+$table->addCheck('age', '`age` >= 0 AND `age` <= 150');
+
+// BETWEEN constraint
+$table->addCheck('discount', '`discount` BETWEEN 0 AND 100');
+
+// Comparison constraint
+$table->addCheck('price', '`price` > 0');
+
+// String IN constraint
+$table->addCheck(
+    'status',
+    '`status` IN (\'pending\', \'active\', \'completed\')'
+);
+
+// REGEXP constraint for email validation
+$table
+    ->addCheck(
+        'email',
+        '`email` REGEXP \'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$\''
+    )
+    ->identifier('chk_email_format');
+
+// Custom identifier
+$table
+    ->addCheck('status', '`status` IN (0, 1, 2, 3)')
+    ->identifier('chk_subscriber_status');
+
+// Date comparison (referencing multiple columns)
+$table->addCheck('end_date', '`end_date` >= `start_date`');
+
+// Length validation
+$table->addCheck('password', 'LENGTH(`password`) >= 8');
+```
+
+#### dropCheck()
+
+```php
+public function dropCheck(string $column, string $expression = ''): CheckDefinition
+```
+
+Removes a CHECK constraint (ALTER TABLE only). Returns a CheckDefinition for custom identifier support.
+
+```php
+// Drop by default identifier (chk_{column})
+$table->dropCheck('status');
+
+// Drop with custom identifier
+$table->dropCheck('email')->identifier('chk_email_format');
+```
+
+#### dropCheckByIdentifier()
+
+```php
+public function dropCheckByIdentifier(string $identifier): void
+```
+
+Removes a CHECK constraint by its identifier name (ALTER TABLE only).
+
+```php
+$table->dropCheckByIdentifier('chk_subscriber_status');
+```
+
 ## ColumnDefinition
 
 Defines column properties and constraints.
@@ -611,6 +690,49 @@ $index->isComposite(); // true
 
 $index = $table->addIndex('email');
 $index->isComposite(); // false
+```
+
+### CheckDefinition
+
+Represents a CHECK constraint for validating column values.
+
+#### identifier()
+
+```php
+public function identifier(string $identifierName): self
+```
+
+Sets a custom identifier name for the CHECK constraint.
+
+**Auto-generated identifier format:** `chk_{column}`
+
+#### getColumn()
+
+```php
+public function getColumn(): string
+```
+
+Returns the column name associated with the CHECK constraint.
+
+#### getExpression()
+
+```php
+public function getExpression(): string
+```
+
+Returns the CHECK expression/condition.
+
+```php
+$check = $table->addCheck('status', '`status` IN (0, 1, 2, 3)');
+$check->getColumn(); // 'status'
+$check->getExpression(); // '`status` IN (0, 1, 2, 3)'
+$check->getIdentifier(); // 'chk_status'
+
+// With custom identifier
+$check = $table
+    ->addCheck('email', '`email` REGEXP \'^.+@.+$\'')
+    ->identifier('chk_email_format');
+$check->getIdentifier(); // 'chk_email_format'
 ```
 
 ## Timestamp Management
@@ -919,6 +1041,113 @@ $qb->table('user_settings')->create(function (TableBuilder $table) {
 ```
 
 This creates a table with properly configured JSON columns that have expression-based defaults, which is required by MySQL for BLOB, TEXT, GEOMETRY, and JSON data types.
+
+### Working with CHECK Constraints
+
+```php
+// Create table with CHECK constraints for data validation
+$qb->table('subscribers')->create(function (TableBuilder $table) {
+    $table->id();
+    $table->addColumn('email', 'varchar')->length(255)->notNull();
+    $table->addColumn('status', 'int')->notNull();
+    $table->addColumn('age', 'int')->null();
+    $table->addColumn('discount', 'decimal')->length('5,2')->notNull();
+    $table->timestamps();
+
+    // Validate status is one of allowed values
+    $table
+        ->addCheck('status', '`status` IN (0, 1, 2, 3)')
+        ->identifier('chk_subscriber_status');
+
+    // Validate email format with REGEXP
+    $table
+        ->addCheck(
+            'email',
+            '`email` REGEXP \'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$\''
+        )
+        ->identifier('chk_email_format');
+
+    // Validate age range (if provided)
+    $table->addCheck('age', '`age` IS NULL OR (`age` >= 0 AND `age` <= 150)');
+
+    // Validate discount percentage
+    $table->addCheck('discount', '`discount` >= 0 AND `discount` <= 100');
+
+    // Unique constraint
+    $table->addUnique('email');
+});
+
+// Create table with date validation
+$qb->table('events')->create(function (TableBuilder $table) {
+    $table->id();
+    $table->addColumn('name', 'varchar')->length(255)->notNull();
+    $table->addColumn('start_date', 'date')->notNull();
+    $table->addColumn('end_date', 'date')->notNull();
+    $table->timestamps();
+
+    // Ensure end_date is after start_date
+    $table
+        ->addCheck('end_date', '`end_date` >= `start_date`')
+        ->identifier('chk_event_dates');
+});
+
+// Create table with string length validation
+$qb->table('users')->create(function (TableBuilder $table) {
+    $table->id();
+    $table->addColumn('username', 'varchar')->length(50)->notNull();
+    $table->addColumn('password', 'varchar')->length(255)->notNull();
+    $table->timestamps();
+
+    // Validate minimum password length
+    $table
+        ->addCheck('password', 'LENGTH(`password`) >= 8')
+        ->identifier('chk_password_length');
+
+    // Validate username length range
+    $table->addCheck('username', 'CHAR_LENGTH(`username`) BETWEEN 3 AND 50');
+});
+
+// Alter table to add/remove CHECK constraints
+$qb->table('subscribers')->alter(function (TableBuilder $table) {
+    // Add new CHECK constraint
+    $table
+        ->addCheck('status', '`status` IN (0, 1, 2, 3, 4)')
+        ->identifier('chk_subscriber_status_v2');
+
+    // Drop CHECK constraint by column (uses default identifier chk_{column})
+    $table->dropCheck('age');
+
+    // Drop CHECK constraint by custom identifier
+    $table->dropCheckByIdentifier('chk_subscriber_status');
+});
+
+// Combining CHECK constraints with other constraints
+$qb->table('orders')->create(function (TableBuilder $table) {
+    $table->id();
+    $table->addColumn('user_id', 'int')->notNull();
+    $table->addColumn('status', 'varchar')->length(20)->notNull();
+    $table->addColumn('total', 'decimal')->length('10,2')->notNull();
+    $table->addColumn('quantity', 'int')->notNull();
+    $table->timestamps();
+
+    // Foreign key
+    $table->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+
+    // Unique constraint
+    $table->addUnique('id');
+
+    // Index for status queries
+    $table->addIndex('status');
+
+    // CHECK constraints for data validation
+    $table->addCheck('total', '`total` >= 0');
+    $table->addCheck('quantity', '`quantity` > 0');
+    $table->addCheck(
+        'status',
+        '`status` IN (\'pending\', \'processing\', \'shipped\', \'delivered\', \'cancelled\')'
+    );
+});
+```
 
 ### Complex Join
 

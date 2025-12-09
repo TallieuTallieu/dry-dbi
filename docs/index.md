@@ -52,6 +52,7 @@ $users = UserRepository::create()->active()->orderBy('name')->amount(10)->get();
 - **[JoinBuilder](schema-builders.md#joinbuilder)** - JOIN operations with conditions
 - **[Timestamp Management](schema-builders.md#timestamp-management)** - Automatic timestamp triggers and column management
 - **[Index Management](schema-builders.md#index-operations)** - Single and composite indexes for query optimization
+- **[CHECK Constraints](schema-builders.md#check-constraint-operations)** - Data validation with CHECK constraints
 - Foreign keys and unique constraints
 
 ### [Raw SQL](raw-statements.md)
@@ -120,6 +121,12 @@ QueryBuilder::create()
         // Add indexes for better query performance
         $table->addIndex('status');
         $table->addIndex(['role_id', 'status']);
+
+        // Add CHECK constraints for data validation
+        $table->addCheck(
+            'status',
+            '`status` IN (\'active\', \'inactive\', \'pending\')'
+        );
 
         // Add automatic timestamp management
         $table->timestamps();
