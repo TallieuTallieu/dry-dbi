@@ -1079,3 +1079,521 @@ describe('TableBuilder Composite Unique Constraints', function () {
         expect($result)->toBe($unique);
     });
 });
+
+describe('TableBuilder CHECK Constraints', function () {
+    // Basic CHECK constraint creation
+    it('creates basic CHECK constraint with IN expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('subscribers');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('status', 'int')->notNull();
+        $tableBuilder->addCheck('status', '`status` IN (0, 1, 2, 3)');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_status` CHECK (`status` IN (0, 1, 2, 3))'
+        );
+    });
+
+    it('creates CHECK constraint with custom identifier', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('subscribers');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('status', 'int')->notNull();
+
+        $check = $tableBuilder->addCheck('status', '`status` IN (0, 1, 2, 3)');
+        $check->identifier('chk_subscriber_status');
+
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_subscriber_status` CHECK (`status` IN (0, 1, 2, 3))'
+        );
+    });
+
+    it('creates CHECK constraint with REGEXP expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('email', 'varchar')->length(255)->notNull();
+
+        $check = $tableBuilder->addCheck(
+            'email',
+            '`email` REGEXP \'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$\''
+        );
+        $check->identifier('chk_email_format');
+
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_email_format` CHECK (`email` REGEXP \'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$\')'
+        );
+    });
+
+    it('creates CHECK constraint with range expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('products');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder
+            ->addColumn('discount', 'decimal')
+            ->length('5,2')
+            ->notNull();
+        $tableBuilder->addCheck(
+            'discount',
+            '`discount` >= 0 AND `discount` <= 100'
+        );
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_discount` CHECK (`discount` >= 0 AND `discount` <= 100)'
+        );
+    });
+
+    it('creates CHECK constraint with BETWEEN expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('employees');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('age', 'int')->notNull();
+        $tableBuilder->addCheck('age', '`age` BETWEEN 18 AND 100');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_age` CHECK (`age` BETWEEN 18 AND 100)'
+        );
+    });
+
+    it('creates CHECK constraint with comparison expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('orders');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('quantity', 'int')->notNull();
+        $tableBuilder->addCheck('quantity', '`quantity` > 0');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_quantity` CHECK (`quantity` > 0)'
+        );
+    });
+
+    it('creates CHECK constraint with string IN expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('orders');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('status', 'varchar')->length(20)->notNull();
+        $tableBuilder->addCheck(
+            'status',
+            '`status` IN (\'pending\', \'processing\', \'shipped\', \'delivered\')'
+        );
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_status` CHECK (`status` IN (\'pending\', \'processing\', \'shipped\', \'delivered\'))'
+        );
+    });
+
+    // Multiple CHECK constraints
+    it('creates multiple CHECK constraints', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('products');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('price', 'decimal')->length('10,2')->notNull();
+        $tableBuilder
+            ->addColumn('discount', 'decimal')
+            ->length('5,2')
+            ->notNull();
+        $tableBuilder->addColumn('quantity', 'int')->notNull();
+        $tableBuilder->addCheck('price', '`price` >= 0');
+        $tableBuilder->addCheck(
+            'discount',
+            '`discount` >= 0 AND `discount` <= 100'
+        );
+        $tableBuilder->addCheck('quantity', '`quantity` >= 0');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain('CONSTRAINT `chk_price` CHECK (`price` >= 0)')
+            ->toContain(
+                'CONSTRAINT `chk_discount` CHECK (`discount` >= 0 AND `discount` <= 100)'
+            )
+            ->toContain('CONSTRAINT `chk_quantity` CHECK (`quantity` >= 0)');
+    });
+
+    it(
+        'creates multiple CHECK constraints with custom identifiers',
+        function () {
+            $tableBuilder = new TableBuilder(false);
+            $tableBuilder->table('users');
+            $tableBuilder->addColumn('id', 'int')->primaryKey();
+            $tableBuilder->addColumn('age', 'int')->notNull();
+            $tableBuilder->addColumn('status', 'int')->notNull();
+
+            $tableBuilder
+                ->addCheck('age', '`age` >= 0')
+                ->identifier('chk_user_age');
+            $tableBuilder
+                ->addCheck('status', '`status` IN (0, 1)')
+                ->identifier('chk_user_status');
+
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)
+                ->toContain('CONSTRAINT `chk_user_age` CHECK (`age` >= 0)')
+                ->toContain(
+                    'CONSTRAINT `chk_user_status` CHECK (`status` IN (0, 1))'
+                );
+        }
+    );
+
+    // ALTER TABLE - Adding CHECK constraints
+    it('adds CHECK constraint in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('subscribers');
+        $tableBuilder->addCheck('status', '`status` IN (0, 1, 2, 3)');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'ADD CONSTRAINT `chk_status` CHECK (`status` IN (0, 1, 2, 3))'
+        );
+    });
+
+    it(
+        'adds CHECK constraint with custom identifier in alter table',
+        function () {
+            $tableBuilder = new TableBuilder(true);
+            $tableBuilder->table('users');
+
+            $check = $tableBuilder->addCheck(
+                'email',
+                '`email` REGEXP \'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$\''
+            );
+            $check->identifier('chk_email_format');
+
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)->toContain(
+                'ADD CONSTRAINT `chk_email_format` CHECK (`email` REGEXP \'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$\')'
+            );
+        }
+    );
+
+    it('adds multiple CHECK constraints in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('products');
+        $tableBuilder->addCheck('price', '`price` >= 0');
+        $tableBuilder->addCheck('quantity', '`quantity` >= 0');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain('ADD CONSTRAINT `chk_price` CHECK (`price` >= 0)')
+            ->toContain(
+                'ADD CONSTRAINT `chk_quantity` CHECK (`quantity` >= 0)'
+            );
+    });
+
+    // ALTER TABLE - Dropping CHECK constraints
+    it('drops CHECK constraint by column in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('subscribers');
+        $tableBuilder->dropCheck('status');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain('DROP CHECK `chk_status`');
+    });
+
+    it('drops CHECK constraint by identifier in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('subscribers');
+        $tableBuilder->dropCheckByIdentifier('chk_subscriber_status');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain('DROP CHECK `chk_subscriber_status`');
+    });
+
+    it(
+        'drops CHECK constraint with custom identifier via dropCheck',
+        function () {
+            $tableBuilder = new TableBuilder(true);
+            $tableBuilder->table('users');
+
+            $check = $tableBuilder->dropCheck('email');
+            $check->identifier('chk_email_format');
+
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)->toContain('DROP CHECK `chk_email_format`');
+        }
+    );
+
+    it('drops multiple CHECK constraints in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('products');
+        $tableBuilder->dropCheck('price');
+        $tableBuilder->dropCheck('quantity');
+        $tableBuilder->dropCheckByIdentifier('chk_custom_discount');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain('DROP CHECK `chk_price`')
+            ->toContain('DROP CHECK `chk_quantity`')
+            ->toContain('DROP CHECK `chk_custom_discount`');
+    });
+
+    // ALTER TABLE - Combined add and drop operations
+    it(
+        'handles adding and dropping CHECK constraints in same alter',
+        function () {
+            $tableBuilder = new TableBuilder(true);
+            $tableBuilder->table('products');
+            $tableBuilder->dropCheck('old_status');
+            $tableBuilder->dropCheckByIdentifier('chk_old_price');
+            $tableBuilder->addCheck('status', '`status` IN (0, 1, 2)');
+            $tableBuilder->addCheck('price', '`price` > 0');
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)
+                ->toContain('DROP CHECK `chk_old_status`')
+                ->toContain('DROP CHECK `chk_old_price`')
+                ->toContain(
+                    'ADD CONSTRAINT `chk_status` CHECK (`status` IN (0, 1, 2))'
+                )
+                ->toContain('ADD CONSTRAINT `chk_price` CHECK (`price` > 0)');
+        }
+    );
+
+    // Combining CHECK constraints with other constraints
+    it('combines CHECK constraints with other table constraints', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('orders');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('user_id', 'int')->notNull();
+        $tableBuilder->addColumn('status', 'varchar')->length(20)->notNull();
+        $tableBuilder->addColumn('total', 'decimal')->length('10,2')->notNull();
+        $tableBuilder->addForeignKey('user_id', 'users', 'id', 'CASCADE');
+        $tableBuilder->addUnique('id');
+        $tableBuilder->addIndex('status');
+        $tableBuilder->addCheck('total', '`total` >= 0');
+        $tableBuilder->addCheck(
+            'status',
+            '`status` IN (\'pending\', \'completed\', \'cancelled\')'
+        );
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain(
+                'CONSTRAINT `fk_orders_user_id_users_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE'
+            )
+            ->toContain('CONSTRAINT `uq_id` UNIQUE (`id`)')
+            ->toContain('INDEX `idx_status` (`status`)')
+            ->toContain('CONSTRAINT `chk_total` CHECK (`total` >= 0)')
+            ->toContain(
+                'CONSTRAINT `chk_status` CHECK (`status` IN (\'pending\', \'completed\', \'cancelled\'))'
+            );
+    });
+
+    it('combines CHECK constraints with columns in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('products');
+        $tableBuilder->addColumn('rating', 'decimal')->length('3,2')->notNull();
+        $tableBuilder->addCheck('rating', '`rating` >= 0 AND `rating` <= 5');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)
+            ->toContain('ADD `rating` DECIMAL(3,2) NOT NULL')
+            ->toContain(
+                'ADD CONSTRAINT `chk_rating` CHECK (`rating` >= 0 AND `rating` <= 5)'
+            );
+    });
+
+    // Complex expression tests
+    it('creates CHECK constraint with date comparison', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('events');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('start_date', 'date')->notNull();
+        $tableBuilder->addColumn('end_date', 'date')->notNull();
+        $tableBuilder->addCheck('end_date', '`end_date` >= `start_date`');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_end_date` CHECK (`end_date` >= `start_date`)'
+        );
+    });
+
+    it('creates CHECK constraint with OR expression', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('payments');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder
+            ->addColumn('payment_type', 'varchar')
+            ->length(20)
+            ->notNull();
+        $tableBuilder->addCheck(
+            'payment_type',
+            '`payment_type` = \'credit\' OR `payment_type` = \'debit\' OR `payment_type` = \'cash\''
+        );
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_payment_type` CHECK (`payment_type` = \'credit\' OR `payment_type` = \'debit\' OR `payment_type` = \'cash\')'
+        );
+    });
+
+    it('creates CHECK constraint with LENGTH function', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('users');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('password', 'varchar')->length(255)->notNull();
+        $tableBuilder->addCheck('password', 'LENGTH(`password`) >= 8');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_password` CHECK (LENGTH(`password`) >= 8)'
+        );
+    });
+
+    // Return type tests
+    it('returns CheckDefinition from addCheck', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('test');
+
+        $check = $tableBuilder->addCheck('status', '`status` IN (0, 1)');
+
+        expect($check)->toBeInstanceOf(\Tnt\Dbi\CheckDefinition::class);
+    });
+
+    it('returns CheckDefinition from dropCheck', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('test');
+
+        $check = $tableBuilder->dropCheck('status');
+
+        expect($check)->toBeInstanceOf(\Tnt\Dbi\CheckDefinition::class);
+    });
+
+    it(
+        'returns fluent interface from identifier on addCheck result',
+        function () {
+            $tableBuilder = new TableBuilder(false);
+            $tableBuilder->table('test');
+
+            $check = $tableBuilder->addCheck('status', '`status` IN (0, 1)');
+            $result = $check->identifier('custom_name');
+
+            expect($result)->toBe($check);
+        }
+    );
+
+    // Edge cases
+    it('handles CHECK constraint with empty table', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('empty_table');
+        $tableBuilder->addCheck('status', '`status` IN (0, 1)');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        expect($query)->toContain(
+            'CONSTRAINT `chk_status` CHECK (`status` IN (0, 1))'
+        );
+    });
+
+    it(
+        'handles CHECK constraint with special characters in identifier',
+        function () {
+            $tableBuilder = new TableBuilder(false);
+            $tableBuilder->table('test');
+            $tableBuilder->addColumn('id', 'int')->primaryKey();
+            $tableBuilder->addColumn('value', 'int')->notNull();
+
+            $check = $tableBuilder->addCheck('value', '`value` >= 0');
+            $check->identifier('chk_test_value_v2');
+
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            expect($query)->toContain(
+                'CONSTRAINT `chk_test_value_v2` CHECK (`value` >= 0)'
+            );
+        }
+    );
+
+    it(
+        'handles dropping non-existent CHECK constraint gracefully',
+        function () {
+            $tableBuilder = new TableBuilder(true);
+            $tableBuilder->table('test');
+            $tableBuilder->dropCheckByIdentifier('non_existent_check');
+            $tableBuilder->build();
+
+            $query = $tableBuilder->getQuery();
+
+            // Should still generate the DROP statement (database will handle if it doesn't exist)
+            expect($query)->toContain('DROP CHECK `non_existent_check`');
+        }
+    );
+
+    // Verify CHECK constraints appear after other constraints in query
+    it('places CHECK constraints after indexes in query', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('test');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder->addColumn('status', 'int')->notNull();
+        $tableBuilder->addIndex('status');
+        $tableBuilder->addCheck('status', '`status` IN (0, 1)');
+        $tableBuilder->build();
+
+        $query = $tableBuilder->getQuery();
+
+        $indexPos = strpos($query, 'INDEX `idx_status`');
+        $checkPos = strpos($query, 'CONSTRAINT `chk_status` CHECK');
+
+        expect($indexPos)->not()->toBeFalse();
+        expect($checkPos)->not()->toBeFalse();
+        expect((int) $indexPos)->toBeLessThan((int) $checkPos);
+    });
+});

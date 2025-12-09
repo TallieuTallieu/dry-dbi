@@ -86,6 +86,16 @@ class TableBuilder extends BuildHandler
     private array $dropIndexes = [];
 
     /**
+     * @var array<int, CheckDefinition>
+     */
+    private array $addChecks = [];
+
+    /**
+     * @var array<int, CheckDefinition|string>
+     */
+    private array $dropChecks = [];
+
+    /**
      * @param string $name
      * @param string $type
      * @return ColumnDefinition
@@ -278,6 +288,51 @@ class TableBuilder extends BuildHandler
     public function dropIndexByIdentifier(string $identifier): void
     {
         $this->dropIndexes[] = $identifier;
+    }
+
+    /**
+     * Add a CHECK constraint to the table
+     *
+     * @param string $column The column name the check constraint applies to
+     * @param string $expression The check expression (e.g., "IN (0, 1, 2, 3)" or "> 0")
+     * @return CheckDefinition
+     */
+    public function addCheck(
+        string $column,
+        string $expression
+    ): CheckDefinition {
+        $check = new CheckDefinition($column, $expression);
+        $this->addChecks[] = $check;
+
+        return $check;
+    }
+
+    /**
+     * Drop a CHECK constraint by column name
+     *
+     * @param string $column The column name the check constraint applies to
+     * @param string $expression The check expression (not used, kept for consistency)
+     * @return CheckDefinition
+     */
+    public function dropCheck(
+        string $column,
+        string $expression = ''
+    ): CheckDefinition {
+        $check = new CheckDefinition($column, $expression);
+        $this->dropChecks[] = $check;
+
+        return $check;
+    }
+
+    /**
+     * Drop a CHECK constraint by its identifier name
+     *
+     * @param string $identifier The constraint identifier name
+     * @return void
+     */
+    public function dropCheckByIdentifier(string $identifier): void
+    {
+        $this->dropChecks[] = $identifier;
     }
 
     /**
@@ -509,6 +564,17 @@ class TableBuilder extends BuildHandler
                 }
             }
 
+            foreach ($this->dropChecks as $check) {
+                if (is_string($check)) {
+                    // Drop by identifier string
+                    $columnStatement[] = 'DROP CHECK ' . $this->quote($check);
+                } else {
+                    // Drop by CheckDefinition object
+                    $columnStatement[] =
+                        'DROP CHECK ' . $this->quote($check->getIdentifier());
+                }
+            }
+
             foreach ($this->dropColumns as $column) {
                 $columnStatement[] = 'DROP COLUMN ' . $this->quote($column);
             }
@@ -560,6 +626,16 @@ class TableBuilder extends BuildHandler
                 $this->quote($index->getIdentifier()) .
                 ' (' .
                 implode(', ', $columns) .
+                ')';
+        }
+
+        foreach ($this->addChecks as $check) {
+            $columnStatement[] =
+                ($this->isAlter ? 'ADD ' : '') .
+                'CONSTRAINT ' .
+                $this->quote($check->getIdentifier()) .
+                ' CHECK (' .
+                $check->getExpression() .
                 ')';
         }
 
