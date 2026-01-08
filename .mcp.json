@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "shortcut": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@shortcut/mcp@latest"],
+      "env": {
+        "SHORTCUT_API_TOKEN": "${SHORTCUT_API_TOKEN}"
+      }
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["chrome-devtools-mcp@latest", "--channel=dev"],
+      "env": {}
+    }
+  }
+}

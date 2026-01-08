@@ -484,7 +484,7 @@ describe('QueryBuilder - CREATE TABLE', function () {
             ->and($query)
             ->toContain('`email` VARCHAR(255) NOT NULL')
             ->and($query)
-            ->toContain("COLLATE 'utf8_unicode_ci'");
+            ->toContain("COLLATE 'utf8mb4_0900_ai_ci'");
     });
 
     it('returns fluent interface from create', function () {
