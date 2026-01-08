@@ -544,7 +544,7 @@ class QueryBuilder extends BuildHandler
 
         $this->addToQuery('CREATE TABLE ' . $this->quote($this->getTable()));
         $this->addToQuery(' (' . $tableBuilder->getQuery() . ')');
-        $this->addToQuery(' COLLATE \'utf8_unicode_ci\'');
+        $this->addToQuery(' COLLATE \'utf8mb4_0900_ai_ci\'');
     }
 
     /**
