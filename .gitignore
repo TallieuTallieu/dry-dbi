@@ -3,3 +3,8 @@
 .wakatime-project
 /vendor/
 .php-cs-fixer.cache
+/.yarn
+/docker/db
+/docker/xdebug/log/xdebug-log.log
+/node_modules
+/.env
