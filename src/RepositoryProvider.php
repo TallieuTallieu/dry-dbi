@@ -2,8 +2,8 @@
 
 namespace Tnt\Dbi;
 
-use Oak\Contracts\Container\ContainerInterface;
-use Oak\ServiceProvider;
+use dry\contracts\container\ContainerInterface;
+use dry\ServiceProvider;
 use Tnt\Dbi\Contracts\CriteriaCollectionInterface;
 use Tnt\Dbi\Contracts\RepositoryInterface;
 

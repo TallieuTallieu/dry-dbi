@@ -5,7 +5,7 @@
   "license": "proprietary",
   "require": {
     "php": "^8.2",
-    "tallieutallieu/oak": "^3.0.8"
+    "tallieutallieu/dry": "@dev"
   },
   "autoload": {
     "psr-4": {
