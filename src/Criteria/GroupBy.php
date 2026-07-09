@@ -4,19 +4,20 @@ namespace Tnt\Dbi\Criteria;
 
 use Tnt\Dbi\Contracts\CriteriaInterface;
 use Tnt\Dbi\QueryBuilder;
+use Tnt\Dbi\Raw;
 
 class GroupBy implements CriteriaInterface
 {
     /**
      * @var string
      */
-    private string $column;
+    private string|Raw $column;
 
     /**
      * GroupBy constructor.
-     * @param string $column
+     * @param string|Raw $column
      */
-    public function __construct(string $column)
+    public function __construct(string|Raw $column)
     {
         $this->column = $column;
     }

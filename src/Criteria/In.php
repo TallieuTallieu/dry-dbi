@@ -11,7 +11,7 @@ class In implements CriteriaInterface
     /**
      * @var string
      */
-    private string $column;
+    private string|Raw $column;
 
     /**
      * @var array<int, mixed>
@@ -20,10 +20,10 @@ class In implements CriteriaInterface
 
     /**
      * Equals constructor.
-     * @param string $column
+     * @param string|Raw $column
      * @param array<int, mixed> $value
      */
-    public function __construct(string $column, array $value)
+    public function __construct(string|Raw $column, array $value)
     {
         $this->column = $column;
         $this->value = $value;

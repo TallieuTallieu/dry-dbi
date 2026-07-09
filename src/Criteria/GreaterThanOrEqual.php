@@ -4,13 +4,14 @@ namespace Tnt\Dbi\Criteria;
 
 use Tnt\Dbi\Contracts\CriteriaInterface;
 use Tnt\Dbi\QueryBuilder;
+use Tnt\Dbi\Raw;
 
 class GreaterThanOrEqual implements CriteriaInterface
 {
     /**
      * @var string
      */
-    private string $column;
+    private string|Raw $column;
 
     /**
      * @var mixed
@@ -19,10 +20,10 @@ class GreaterThanOrEqual implements CriteriaInterface
 
     /**
      * GreaterThanOrEqual constructor.
-     * @param string $column
+     * @param string|Raw $column
      * @param mixed $value
      */
-    public function __construct(string $column, mixed $value)
+    public function __construct(string|Raw $column, mixed $value)
     {
         $this->column = $column;
         $this->value = $value;

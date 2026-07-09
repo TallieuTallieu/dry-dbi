@@ -11,13 +11,13 @@ class IsFalse implements CriteriaInterface
     /**
      * @var string
      */
-    private string $column;
+    private string|Raw $column;
 
     /**
      * IsFalse constructor.
-     * @param string $column
+     * @param string|Raw $column
      */
-    public function __construct(string $column)
+    public function __construct(string|Raw $column)
     {
         $this->column = $column;
     }
