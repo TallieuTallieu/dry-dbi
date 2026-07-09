@@ -4,13 +4,14 @@ namespace Tnt\Dbi\Criteria;
 
 use Tnt\Dbi\Contracts\CriteriaInterface;
 use Tnt\Dbi\QueryBuilder;
+use Tnt\Dbi\Raw;
 
 class OrderBy implements CriteriaInterface
 {
     /**
-     * @var string
+     * @var string|Raw
      */
-    private string $column;
+    private string|Raw $column;
 
     /**
      * @var string
@@ -19,10 +20,10 @@ class OrderBy implements CriteriaInterface
 
     /**
      * OrderBy constructor.
-     * @param string $column
+     * @param string|Raw $column
      * @param string $order
      */
-    public function __construct(string $column, string $order = 'ASC')
+    public function __construct(string|Raw $column, string $order = 'ASC')
     {
         $this->column = $column;
         $this->order = $order;
