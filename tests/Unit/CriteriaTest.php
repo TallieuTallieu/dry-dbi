@@ -15,7 +15,9 @@ use Tnt\Dbi\Criteria\OrEquals;
 use Tnt\Dbi\Criteria\OrderBy;
 use Tnt\Dbi\Criteria\GroupBy;
 use Tnt\Dbi\Criteria\LimitOffset;
+use Tnt\Dbi\Contracts\CriteriaInterface;
 use Tnt\Dbi\QueryBuilder;
+use Tnt\Dbi\Raw;
 
 describe('Equals Criteria', function () {
     it('applies equals condition with table prefix', function () {
@@ -140,8 +142,13 @@ describe('In Criteria', function () {
         $queryBuilder->build();
 
         expect($queryBuilder->getQuery())->toContain(
-            "WHERE `orders`.`status` IN ('active','pending','approved')"
+            'WHERE `orders`.`status` IN (?,?,?)'
         );
+        expect($queryBuilder->getParameters())->toBe([
+            'active',
+            'pending',
+            'approved',
+        ]);
     });
 
     it('handles numeric array', function () {
@@ -154,8 +161,22 @@ describe('In Criteria', function () {
         $queryBuilder->build();
 
         expect($queryBuilder->getQuery())->toContain(
-            'WHERE `users`.`id` IN (1,2,3,4,5)'
+            'WHERE `users`.`id` IN (?,?,?,?,?)'
         );
+        expect($queryBuilder->getParameters())->toBe([1, 2, 3, 4, 5]);
+    });
+
+    it('produces an always false condition for an empty array', function () {
+        $criteria = new In('id', []);
+        $queryBuilder = new QueryBuilder();
+        $queryBuilder->table('users');
+        $queryBuilder->selectAll();
+
+        $criteria->apply($queryBuilder);
+        $queryBuilder->build();
+
+        expect($queryBuilder->getQuery())->toContain('WHERE 1 = 0');
+        expect($queryBuilder->getParameters())->toBe([]);
     });
 });
 
@@ -307,6 +328,126 @@ describe('GroupBy Criteria', function () {
             'GROUP BY `products`.`category`'
         );
     });
+});
+
+describe('Raw Column Criteria', function () {
+    it(
+        'applies an unquoted raw column with bindings',
+        function (
+            CriteriaInterface $criteria,
+            string $expectedQuery,
+            array $expectedParameters
+        ) {
+            $queryBuilder = new QueryBuilder();
+            $queryBuilder->table('records');
+            $queryBuilder->selectAll();
+
+            $criteria->apply($queryBuilder);
+            $queryBuilder->build();
+
+            expect($queryBuilder->getQuery())->toContain($expectedQuery);
+            expect($queryBuilder->getParameters())->toBe($expectedParameters);
+        }
+    )->with([
+        'Equals' => [
+            new Equals(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                10
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) = ?',
+            ['$.score', 10],
+        ],
+        'NotEquals' => [
+            new NotEquals(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                10
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) != ?',
+            ['$.score', 10],
+        ],
+        'GreaterThan' => [
+            new GreaterThan(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                10
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) > ?',
+            ['$.score', 10],
+        ],
+        'GreaterThanOrEqual' => [
+            new GreaterThanOrEqual(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                10
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) >= ?',
+            ['$.score', 10],
+        ],
+        'LessThan' => [
+            new LessThan(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                10
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) < ?',
+            ['$.score', 10],
+        ],
+        'LessThanOrEqual' => [
+            new LessThanOrEqual(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                10
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) <= ?',
+            ['$.score', 10],
+        ],
+        'In' => [
+            new In(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
+                [10, 20]
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) IN (?,?)',
+            ['$.score', 10, 20],
+        ],
+        'IsNull' => [
+            new IsNull(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score'])
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) IS NULL',
+            ['$.score'],
+        ],
+        'NotNull' => [
+            new NotNull(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score'])
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) IS NOT NULL',
+            ['$.score'],
+        ],
+        'IsTrue' => [
+            new IsTrue(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.enabled'])
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) IS TRUE',
+            ['$.enabled'],
+        ],
+        'IsFalse' => [
+            new IsFalse(
+                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.enabled'])
+            ),
+            'WHERE JSON_EXTRACT(`metadata`, ?) IS FALSE',
+            ['$.enabled'],
+        ],
+        'OrderBy' => [
+            new OrderBy(
+                new Raw('FIELD(`status`, ?, ?)', ['active', 'pending'])
+            ),
+            'ORDER BY FIELD(`status`, ?, ?) ASC',
+            ['active', 'pending'],
+        ],
+        'GroupBy' => [
+            new GroupBy(
+                new Raw('DATE_FORMAT(`created_at`, ?)', ['%Y-%m'])
+            ),
+            'GROUP BY DATE_FORMAT(`created_at`, ?)',
+            ['%Y-%m'],
+        ],
+    ]);
 });
 
 describe('LimitOffset Criteria', function () {
