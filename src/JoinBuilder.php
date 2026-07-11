@@ -41,14 +41,14 @@ class JoinBuilder extends BuildHandler
      * @param string $field
      * @param string $operator
      * @param string $value
-     * @return BuildHandler
+     * @return self
      */
     public function on(
         string $field,
         string $operator,
         string $value,
         bool $prefix = true
-    ): BuildHandler {
+    ): self {
         $this->on[] = [$field, $operator, $value, $prefix];
         return $this;
     }
@@ -57,7 +57,7 @@ class JoinBuilder extends BuildHandler
      * Set an alias for the joined table
      *
      * @param string $alias The alias to use for the joined table
-     * @return $this
+     * @return self
      */
     public function as(string $alias): self
     {
