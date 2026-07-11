@@ -35,6 +35,10 @@ class In implements CriteriaInterface
     public function apply(QueryBuilder $queryBuilder): void
     {
         $placeholders = implode(',', array_fill(0, count($this->value), '?'));
-        $queryBuilder->where($this->column, 'IN', new Raw("($placeholders)", array_values($this->value)));
+        $queryBuilder->where(
+            $this->column,
+            'IN',
+            new Raw("($placeholders)", array_values($this->value))
+        );
     }
 }
