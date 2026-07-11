@@ -140,8 +140,13 @@ describe('In Criteria', function () {
         $queryBuilder->build();
 
         expect($queryBuilder->getQuery())->toContain(
-            "WHERE `orders`.`status` IN ('active','pending','approved')"
+            'WHERE `orders`.`status` IN (?,?,?)'
         );
+        expect($queryBuilder->getParameters())->toBe([
+            'active',
+            'pending',
+            'approved',
+        ]);
     });
 
     it('handles numeric array', function () {
@@ -154,8 +159,22 @@ describe('In Criteria', function () {
         $queryBuilder->build();
 
         expect($queryBuilder->getQuery())->toContain(
-            'WHERE `users`.`id` IN (1,2,3,4,5)'
+            'WHERE `users`.`id` IN (?,?,?,?,?)'
         );
+        expect($queryBuilder->getParameters())->toBe([1, 2, 3, 4, 5]);
+    });
+
+    it('produces an always false condition for an empty array', function () {
+        $criteria = new In('id', []);
+        $queryBuilder = new QueryBuilder();
+        $queryBuilder->table('users');
+        $queryBuilder->selectAll();
+
+        $criteria->apply($queryBuilder);
+        $queryBuilder->build();
+
+        expect($queryBuilder->getQuery())->toContain('WHERE 1 = 0');
+        expect($queryBuilder->getParameters())->toBe([]);
     });
 });
 
