@@ -97,7 +97,7 @@ describe('JoinBuilder', function () {
         $join->setType('left');
         $result = $join->on('posts.user_id', '=', 'users.id');
 
-        expect($result)->toBeInstanceOf(Tnt\Dbi\BuildHandler::class);
+        expect($result)->toBe($join);
     });
 
     it('returns fluent interface from as method', function () {
