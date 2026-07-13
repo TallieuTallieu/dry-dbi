@@ -82,6 +82,17 @@ describe('JoinBuilder', function () {
             );
     });
 
+    it('handles an integer literal in an ON condition', function () {
+        $join = new JoinBuilder();
+        $join->table('website_stock');
+        $join->on('website_stock.location', '=', 1, false);
+        $join->build();
+
+        expect($join->getQuery())->toContain(
+            'ON `website_stock`.`location` = 1'
+        );
+    });
+
     it('throws exception for invalid join type', function () {
         $join = new JoinBuilder();
 

@@ -331,29 +331,23 @@ describe('GroupBy Criteria', function () {
 });
 
 describe('Raw Column Criteria', function () {
-    it(
-        'applies an unquoted raw column with bindings',
-        function (
-            CriteriaInterface $criteria,
-            string $expectedQuery,
-            array $expectedParameters
-        ) {
-            $queryBuilder = new QueryBuilder();
-            $queryBuilder->table('records');
-            $queryBuilder->selectAll();
+    it('applies an unquoted raw column with bindings', function (
+        CriteriaInterface $criteria,
+        string $expectedQuery,
+        array $expectedParameters
+    ) {
+        $queryBuilder = new QueryBuilder();
+        $queryBuilder->table('records');
+        $queryBuilder->selectAll();
 
-            $criteria->apply($queryBuilder);
-            $queryBuilder->build();
+        $criteria->apply($queryBuilder);
+        $queryBuilder->build();
 
-            expect($queryBuilder->getQuery())->toContain($expectedQuery);
-            expect($queryBuilder->getParameters())->toBe($expectedParameters);
-        }
-    )->with([
+        expect($queryBuilder->getQuery())->toContain($expectedQuery);
+        expect($queryBuilder->getParameters())->toBe($expectedParameters);
+    })->with([
         'Equals' => [
-            new Equals(
-                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
-                10
-            ),
+            new Equals(new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']), 10),
             'WHERE JSON_EXTRACT(`metadata`, ?) = ?',
             ['$.score', 10],
         ],
@@ -398,38 +392,30 @@ describe('Raw Column Criteria', function () {
             ['$.score', 10],
         ],
         'In' => [
-            new In(
-                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']),
-                [10, 20]
-            ),
+            new In(new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score']), [
+                10,
+                20,
+            ]),
             'WHERE JSON_EXTRACT(`metadata`, ?) IN (?,?)',
             ['$.score', 10, 20],
         ],
         'IsNull' => [
-            new IsNull(
-                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score'])
-            ),
+            new IsNull(new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score'])),
             'WHERE JSON_EXTRACT(`metadata`, ?) IS NULL',
             ['$.score'],
         ],
         'NotNull' => [
-            new NotNull(
-                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score'])
-            ),
+            new NotNull(new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.score'])),
             'WHERE JSON_EXTRACT(`metadata`, ?) IS NOT NULL',
             ['$.score'],
         ],
         'IsTrue' => [
-            new IsTrue(
-                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.enabled'])
-            ),
+            new IsTrue(new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.enabled'])),
             'WHERE JSON_EXTRACT(`metadata`, ?) IS TRUE',
             ['$.enabled'],
         ],
         'IsFalse' => [
-            new IsFalse(
-                new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.enabled'])
-            ),
+            new IsFalse(new Raw('JSON_EXTRACT(`metadata`, ?)', ['$.enabled'])),
             'WHERE JSON_EXTRACT(`metadata`, ?) IS FALSE',
             ['$.enabled'],
         ],
@@ -441,9 +427,7 @@ describe('Raw Column Criteria', function () {
             ['active', 'pending'],
         ],
         'GroupBy' => [
-            new GroupBy(
-                new Raw('DATE_FORMAT(`created_at`, ?)', ['%Y-%m'])
-            ),
+            new GroupBy(new Raw('DATE_FORMAT(`created_at`, ?)', ['%Y-%m'])),
             'GROUP BY DATE_FORMAT(`created_at`, ?)',
             ['%Y-%m'],
         ],

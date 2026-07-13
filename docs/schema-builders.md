@@ -576,14 +576,15 @@ Sets the join type: 'left', 'right', or 'inner'.
 #### on()
 
 ```php
-public function on(string $field, string $operator, string $value, bool $prefix = true): self
+public function on(string $field, string $operator, string|int $value, bool $prefix = true): self
 ```
 
-Adds an ON condition to the join.
+Adds an ON condition to the join. Pass `false` for `$prefix` when `$value` is a
+literal rather than a column reference. Integer SQL literals are supported.
 
 ```php
 $join->on('users.id', '=', 'posts.user_id');
-$join->on('posts.status', '=', 'published');
+$join->on('website_stock.location', '=', 1, false);
 ```
 
 #### as()
