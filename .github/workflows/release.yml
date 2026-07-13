@@ -9,6 +9,11 @@ on:
       - '.gitignore'
       - '.github/**'
 
+concurrency:
+  group: auto-release-${{ github.ref }}
+  queue: max
+  cancel-in-progress: false
+
 jobs:
   auto-release:
     runs-on: ubuntu-latest
@@ -18,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -91,14 +96,43 @@ jobs:
         id: version
         if: steps.should-release.outputs.should_release == 'true'
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LATEST_TAG" ]; then
-            OLD_VERSION="0.0.0"
-          else
-            OLD_VERSION=${LATEST_TAG#v}
-          fi
+          SEMVER_TAGS=$(git tag --list | awk '
+            /^v?[0-9]+\.[0-9]+\.[0-9]+$/ {
+              version = $0
+              sub(/^v/, "", version)
+              print version "\t" $0
+            }
+          ' | sort -V)
+          LATEST_TAG=$(echo "$SEMVER_TAGS" | tail -n 1 | cut -f 2)
+          CURRENT_TAG=$(git tag --points-at HEAD | awk '
+            /^v?[0-9]+\.[0-9]+\.[0-9]+$/ {
+              version = $0
+              sub(/^v/, "", version)
+              print version "\t" $0
+            }
+          ' | sort -V | tail -n 1 | cut -f 2)
 
-          if [[ $OLD_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+          if [ -n "$CURRENT_TAG" ]; then
+            NEW_VERSION=${CURRENT_TAG#v}
+            PREVIOUS_TAG=$(echo "$SEMVER_TAGS" | awk -v current="$NEW_VERSION" '
+              $1 == current { exit }
+              { previous = $2 }
+              END { print previous }
+            ')
+            OLD_VERSION=${PREVIOUS_TAG#v}
+            OLD_VERSION=${OLD_VERSION:-0.0.0}
+            TAG_EXISTS=true
+          else
+            PREVIOUS_TAG=$LATEST_TAG
+            OLD_VERSION=${LATEST_TAG#v}
+            OLD_VERSION=${OLD_VERSION:-0.0.0}
+            TAG_EXISTS=false
+
+            if [[ ! $OLD_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "Error: Invalid version format '$OLD_VERSION'" >&2
+              exit 1
+            fi
+
             MAJOR=${BASH_REMATCH[1]}
             MINOR=${BASH_REMATCH[2]}
             PATCH=${BASH_REMATCH[3]}
@@ -110,30 +144,29 @@ jobs:
             esac
 
             NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          else
-            echo "Error: Invalid version format '$OLD_VERSION'" >&2
-            exit 1
           fi
 
           echo "old_version=$OLD_VERSION" >> "$GITHUB_OUTPUT"
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+          echo "tag_exists=$TAG_EXISTS" >> "$GITHUB_OUTPUT"
 
       - name: Create and push tag
-        if: steps.should-release.outputs.should_release == 'true'
+        if: steps.should-release.outputs.should_release == 'true' && steps.version.outputs.tag_exists != 'true'
         run: |
           git tag "${{ steps.version.outputs.new_version }}"
-          git push origin --tags
+          git push origin "refs/tags/${{ steps.version.outputs.new_version }}"
 
       - name: Generate changelog
         if: steps.should-release.outputs.should_release == 'true'
         id: changelog
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          PREVIOUS_TAG="${{ steps.version.outputs.previous_tag }}"
 
-          if [ -n "$LATEST_TAG" ]; then
-            echo "### Changes since $LATEST_TAG" > CHANGELOG.md
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "### Changes since $PREVIOUS_TAG" > CHANGELOG.md
             echo "" >> CHANGELOG.md
-            git log --pretty=format:"- %s (%h)" $LATEST_TAG..HEAD >> CHANGELOG.md
+            git log --pretty=format:"- %s (%h)" "$PREVIOUS_TAG"..HEAD >> CHANGELOG.md
           else
             echo "### Initial Release" > CHANGELOG.md
             echo "" >> CHANGELOG.md
