@@ -40,16 +40,17 @@ class JoinBuilder extends BuildHandler
     /**
      * @param string $field
      * @param string $operator
-     * @param string $value
+     * @param string|int $value
      * @return self
      */
     public function on(
         string $field,
         string $operator,
-        string $value,
+        string|int $value,
         bool $prefix = true
     ): self {
-        $this->on[] = [$field, $operator, $value, $prefix];
+        $this->on[] = [$field, $operator, (string) $value, $prefix];
+
         return $this;
     }
 
