@@ -76,6 +76,43 @@ describe('TableBuilder Basic Functionality', function () {
             ->toContain('CONSTRAINT `uq_username` UNIQUE (`username`)');
     });
 
+    it('creates column with collation', function () {
+        $tableBuilder = new TableBuilder(false);
+        $tableBuilder->table('ecommerce_cart_item');
+        $tableBuilder->addColumn('id', 'int')->primaryKey();
+        $tableBuilder
+            ->addColumn('options', 'text')
+            ->collate('utf8mb4_bin')
+            ->null();
+        $tableBuilder->build();
+
+        expect($tableBuilder->getQuery())->toContain(
+            '`options` TEXT COLLATE utf8mb4_bin NULL'
+        );
+    });
+
+    it('adds and changes collated columns in alter table', function () {
+        $tableBuilder = new TableBuilder(true);
+        $tableBuilder->table('ecommerce_cart_item');
+        $tableBuilder
+            ->addColumn('options', 'text')
+            ->collate('utf8mb4_bin')
+            ->null();
+        $tableBuilder
+            ->changeColumn('reference')
+            ->type('varchar')
+            ->length(32)
+            ->collate('utf8mb4_bin')
+            ->notNull();
+        $tableBuilder->build();
+
+        expect($tableBuilder->getQuery())
+            ->toContain('ADD `options` TEXT COLLATE utf8mb4_bin NULL')
+            ->toContain(
+                'CHANGE `reference` `reference` VARCHAR(32) COLLATE utf8mb4_bin NOT NULL'
+            );
+    });
+
     it('handles alter table operations', function () {
         $tableBuilder = new TableBuilder(true);
         $tableBuilder->table('users');

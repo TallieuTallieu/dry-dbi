@@ -32,6 +32,11 @@ class ColumnDefinition
     /**
      * @var string|null
      */
+    private ?string $collation = null;
+
+    /**
+     * @var string|null
+     */
     private ?string $generateQuery = null;
 
     /**
@@ -98,6 +103,25 @@ class ColumnDefinition
             throw new \InvalidArgumentException('Column type cannot be empty');
         }
         $this->type = $type;
+        return $this;
+    }
+
+    /**
+     * Sets the column collation, e.g. 'utf8mb4_bin' for case- and
+     * accent-sensitive comparisons.
+     *
+     * @param string $collation
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function collate(string $collation): self
+    {
+        if (empty($collation) || !$this->isValidIdentifier($collation)) {
+            throw new \InvalidArgumentException(
+                'Column collation must be a valid identifier'
+            );
+        }
+        $this->collation = $collation;
         return $this;
     }
 
@@ -228,6 +252,10 @@ class ColumnDefinition
             }
 
             $statement[] = $type;
+        }
+
+        if ($this->collation !== null) {
+            $statement[] = 'COLLATE ' . $this->collation;
         }
 
         if ($this->generateQuery) {
