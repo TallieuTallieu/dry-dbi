@@ -114,6 +114,63 @@ describe('ColumnDefinition', function () {
         );
     });
 
+    it('creates column with collation', function () {
+        $column = new ColumnDefinition('options');
+        $column->type('text')->collate('utf8mb4_bin')->null();
+
+        expect($column->getString())->toBe(
+            '`options` TEXT COLLATE utf8mb4_bin NULL'
+        );
+    });
+
+    it('emits collation before default value', function () {
+        $column = new ColumnDefinition('slug');
+        $column
+            ->type('varchar')
+            ->length(255)
+            ->collate('utf8mb4_bin')
+            ->notNull()
+            ->default('home');
+
+        expect($column->getString())->toBe(
+            "`slug` VARCHAR(255) COLLATE utf8mb4_bin NOT NULL DEFAULT 'home'"
+        );
+    });
+
+    it('creates column with collation in alter mode', function () {
+        $column = new ColumnDefinition('options', true);
+        $column->type('text')->collate('utf8mb4_bin')->null();
+
+        expect($column->getString())->toBe(
+            '`options` `options` TEXT COLLATE utf8mb4_bin NULL'
+        );
+    });
+
+    it('omits collation when not set', function () {
+        $column = new ColumnDefinition('options');
+        $column->type('text')->null();
+
+        expect($column->getString())->toBe('`options` TEXT NULL');
+    });
+
+    it('throws exception for empty collation', function () {
+        $column = new ColumnDefinition('options');
+        expect(fn() => $column->collate(''))->toThrow(
+            \InvalidArgumentException::class,
+            'Column collation must be a valid identifier'
+        );
+    });
+
+    it('throws exception for invalid collation', function () {
+        $column = new ColumnDefinition('options');
+        expect(
+            fn() => $column->collate("utf8mb4_bin'; DROP TABLE users; --")
+        )->toThrow(
+            \InvalidArgumentException::class,
+            'Column collation must be a valid identifier'
+        );
+    });
+
     it('handles auto increment without primary key', function () {
         $column = new ColumnDefinition('sequence');
         $column->type('int')->notNull()->autoIncrement();

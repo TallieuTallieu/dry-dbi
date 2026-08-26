@@ -462,6 +462,23 @@ $column->type('varchar')->length(255);
 $column->type('decimal')->length('10,2');
 ```
 
+#### collate()
+
+```php
+public function collate(string $collation): self
+```
+
+Sets the column collation, overriding the table default (`utf8mb4_0900_ai_ci`).
+
+The table default is case- **and** accent-insensitive, so `'No Goat' = 'no goat'` and `'crème' = 'creme'` both compare as equal. Any column used as an exact-match key — canonical JSON, a hash, a token, a slug, a base32 reference — needs a binary collation to avoid silently matching values it should not.
+
+```php
+$table->addColumn('options', 'text')->collate('utf8mb4_bin')->null();
+// Generates: `options` TEXT COLLATE utf8mb4_bin NULL
+```
+
+The collation is emitted directly after the type, in both `CREATE TABLE` and `ALTER TABLE` output. Omitting it leaves generated DDL unchanged. The name is validated as an identifier (letters, digits and underscores, not starting with a digit) and throws `\InvalidArgumentException` otherwise, since it is interpolated into the query rather than bound.
+
 ### Constraints
 
 #### primaryKey()
