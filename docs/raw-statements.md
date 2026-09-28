@@ -65,14 +65,14 @@ class JsonFieldCriteria implements CriteriaInterface
     private $field;
     private $path;
     private $value;
-    
+
     public function __construct($field, $path, $value)
     {
         $this->field = $field;
         $this->path = $path;
         $this->value = $value;
     }
-    
+
     public function apply(QueryBuilder $queryBuilder)
     {
         $queryBuilder->where(
@@ -93,22 +93,27 @@ class JsonFieldCriteria implements CriteriaInterface
 $qb->groupBy(new Raw('MONTH(created_at)'));
 
 // Order by custom expression
-$qb->orderBy(new Raw('FIELD(status, ?, ?, ?)', ['pending', 'active', 'inactive']));
+$qb->orderBy(
+    new Raw('FIELD(status, ?, ?, ?)', ['pending', 'active', 'inactive'])
+);
 ```
 
 #### Subqueries
 
 ```php
 // Subquery in SELECT
-$qb->select(new Raw(
-    '(SELECT COUNT(*) FROM posts WHERE user_id = users.id) as post_count'
-));
+$qb->select(
+    new Raw(
+        '(SELECT COUNT(*) FROM posts WHERE user_id = users.id) as post_count'
+    )
+);
 
 // Subquery in WHERE
-$qb->where(new Raw(
-    'id IN (SELECT user_id FROM posts WHERE created_at > ?)',
-    ['2023-01-01']
-));
+$qb->where(
+    new Raw('id IN (SELECT user_id FROM posts WHERE created_at > ?)', [
+        '2023-01-01',
+    ])
+);
 ```
 
 #### Mathematical Operations
@@ -118,10 +123,7 @@ $qb->where(new Raw(
 $qb->selectAs(new Raw('price * quantity'), 'total_amount');
 
 // Complex calculations with parameters
-$qb->select(new Raw(
-    'ROUND(rating * ?, 2) as weighted_rating',
-    [1.5]
-));
+$qb->select(new Raw('ROUND(rating * ?, 2) as weighted_rating', [1.5]));
 ```
 
 #### String Functions
@@ -131,10 +133,11 @@ $qb->select(new Raw(
 $qb->where(new Raw('LOWER(name)'), 'LIKE', '%search%');
 
 // Full-text search
-$qb->where(new Raw(
-    'MATCH(title, content) AGAINST(? IN BOOLEAN MODE)',
-    ['+mysql +database']
-));
+$qb->where(
+    new Raw('MATCH(title, content) AGAINST(? IN BOOLEAN MODE)', [
+        '+mysql +database',
+    ])
+);
 ```
 
 ## Best Practices
@@ -176,7 +179,7 @@ class SqlExpressions
     {
         return new Raw('CONCAT(first_name, " ", last_name)');
     }
-    
+
     public static function ageFromBirthdate(): Raw
     {
         return new Raw('FLOOR(DATEDIFF(NOW(), birthdate) / 365.25)');
@@ -184,8 +187,10 @@ class SqlExpressions
 }
 
 // Usage
-$qb->selectAs(SqlExpressions::fullName(), 'full_name')
-   ->selectAs(SqlExpressions::ageFromBirthdate(), 'age');
+$qb->selectAs(SqlExpressions::fullName(), 'full_name')->selectAs(
+    SqlExpressions::ageFromBirthdate(),
+    'age'
+);
 ```
 
 ## Integration with Other Components
@@ -196,9 +201,9 @@ Raw statements work seamlessly with all QueryBuilder methods:
 
 ```php
 $qb->select(new Raw('DISTINCT category'))
-   ->where(new Raw('YEAR(created_at)'), '=', 2023)
-   ->orderBy(new Raw('RAND()'))
-   ->having(new Raw('COUNT(*)'), '>', 5);
+    ->where(new Raw('YEAR(created_at)'), '=', 2023)
+    ->orderBy(new Raw('RAND()'))
+    ->having(new Raw('COUNT(*)'), '>', 5);
 ```
 
 ### In Criteria
@@ -217,6 +222,6 @@ class RandomOrderCriteria implements CriteriaInterface
 
 ```php
 $qb->leftJoin('categories')
-   ->on(new Raw('products.category_id'), '=', new Raw('categories.id'))
-   ->on(new Raw('categories.is_active'), '=', new Raw('1'));
+    ->on(new Raw('products.category_id'), '=', new Raw('categories.id'))
+    ->on(new Raw('categories.is_active'), '=', new Raw('1'));
 ```

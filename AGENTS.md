@@ -27,8 +27,8 @@
 - Use `shortcut_stories_create` to create new stories when requested
 - **Name is required** - use clear, descriptive titles
 - **Team or Workflow must be specified**:
-  - If only Team is specified, the default workflow for that team will be used
-  - If Workflow is specified, it will be used regardless of Team
+    - If only Team is specified, the default workflow for that team will be used
+    - If Workflow is specified, it will be used regardless of Team
 - **Story types**: `feature` (default), `bug`, or `chore`
 - Stories are automatically added to the default state for the workflow
 - Always link stories to the epic: `epic: 8287`
@@ -50,11 +50,11 @@ All story names MUST follow this pattern: `dry-dbi: [Feature/Component Name]`
 #### Story Type Guidelines
 
 - **`feature`**: New functionality, enhancements, or additions
-  - Examples: "JSON Column Support", "Timestamp Triggers Support", "Batch Operations Support"
+    - Examples: "JSON Column Support", "Timestamp Triggers Support", "Batch Operations Support"
 - **`chore`**: Documentation, tests, tooling, maintenance
-  - Examples: "Migration Patterns Documentation", "Comprehensive Unit Tests", "Performance Benchmarks"
+    - Examples: "Migration Patterns Documentation", "Comprehensive Unit Tests", "Performance Benchmarks"
 - **`bug`**: Bug fixes, corrections, hotfixes
-  - Use for fixing existing functionality
+    - Use for fixing existing functionality
 
 #### Description Structure
 

@@ -96,28 +96,28 @@ Adds ORDER BY clause to the query.
 class UserRepository extends BaseRepository
 {
     protected $model = User::class;
-    
+
     protected function init()
     {
         // Default ordering
         $this->addCriteria(new OrderBy('created_at', 'DESC'));
     }
-    
+
     public function active(): self
     {
         $this->addCriteria(new IsTrue('is_active'));
         return $this;
     }
-    
+
     public function byRole(string $role): self
     {
         $this->addCriteria(new Equals('role', $role));
         return $this;
     }
-    
+
     public function withPosts(): self
     {
-        $this->useQueryBuilder(function(QueryBuilder $qb) {
+        $this->useQueryBuilder(function (QueryBuilder $qb) {
             $qb->leftJoin('posts')->on('users.id', '=', 'posts.user_id');
         });
         return $this;

@@ -110,7 +110,7 @@ Adds table prefix to column names. Handles both simple columns and table.column 
 
 ```php
 // With table set to 'users'
-$this->withTablePrefix('name');        // Returns: `users`.`name`
+$this->withTablePrefix('name'); // Returns: `users`.`name`
 $this->withTablePrefix('posts.title'); // Returns: `posts`.`title`
 ```
 
@@ -120,25 +120,29 @@ $this->withTablePrefix('posts.title'); // Returns: `posts`.`title`
 class CustomBuilder extends BuildHandler
 {
     private $conditions = [];
-    
+
     public function where($column, $value)
     {
         $this->conditions[] = [
             'column' => $this->createStatement($column, true),
-            'value' => $this->createStatement($value)
+            'value' => $this->createStatement($value),
         ];
         return $this;
     }
-    
+
     public function build()
     {
         $this->addToQuery('SELECT * FROM ' . $this->quote($this->getTable()));
-        
+
         if (!empty($this->conditions)) {
             $this->addToQuery(' WHERE ');
-            
+
             foreach ($this->conditions as $condition) {
-                $this->addToQuery($condition['column']->getValue() . ' = ' . $condition['value']->getValue());
+                $this->addToQuery(
+                    $condition['column']->getValue() .
+                        ' = ' .
+                        $condition['value']->getValue()
+                );
                 $this->addParameters($condition['column']->getBindings());
                 $this->addParameters($condition['value']->getBindings());
             }
