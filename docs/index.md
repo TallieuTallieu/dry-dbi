@@ -67,12 +67,6 @@ $users = UserRepository::create()->active()->orderBy('name')->amount(10)->get();
 - **[BuildHandler](build-handler.md)** - Base class for query builders
 - Extensibility and customization points
 
-### [Release Process](release-process.md)
-
-- **[Automated Tagging](release-process.md)** - GitHub Actions workflow for releases
-- **[Semantic Versioning](release-process.md#semantic-versioning)** - Version management strategy
-- **[CI/CD Integration](release-process.md#cicd-integration)** - Continuous integration and deployment
-
 ## Advanced Topics
 
 ### Custom Criteria
