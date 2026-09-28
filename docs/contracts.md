@@ -24,13 +24,13 @@ class CustomCriteria implements CriteriaInterface
 {
     private $column;
     private $value;
-    
+
     public function __construct($column, $value)
     {
         $this->column = $column;
         $this->value = $value;
     }
-    
+
     public function apply(QueryBuilder $queryBuilder)
     {
         $queryBuilder->where($this->column, '=', $this->value);
@@ -64,12 +64,12 @@ Returns an array of all criteria in the collection.
 class CustomCriteriaCollection implements CriteriaCollectionInterface
 {
     private $criteria = [];
-    
+
     public function addCriteria(CriteriaInterface $criteria)
     {
         $this->criteria[] = $criteria;
     }
-    
+
     public function getCriteria(): array
     {
         return $this->criteria;
@@ -104,18 +104,18 @@ class CustomStatement implements StatementInterface
 {
     private $sql;
     private $bindings;
-    
+
     public function __construct(string $sql, array $bindings = [])
     {
         $this->sql = $sql;
         $this->bindings = $bindings;
     }
-    
+
     public function getValue(): string
     {
         return $this->sql;
     }
-    
+
     public function getBindings(): array
     {
         return $this->bindings;

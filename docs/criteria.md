@@ -7,7 +7,7 @@ Criteria provide a composable way to build query conditions. Each criteria class
 ### Equals
 
 ```php
-new Equals($column, $value)
+new Equals($column, $value);
 ```
 
 Adds `WHERE column = value` condition.
@@ -19,7 +19,7 @@ $repo->addCriteria(new Equals('status', 'active'));
 ### NotEquals
 
 ```php
-new NotEquals($column, $value)
+new NotEquals($column, $value);
 ```
 
 Adds `WHERE column != value` condition.
@@ -27,7 +27,7 @@ Adds `WHERE column != value` condition.
 ### GreaterThan
 
 ```php
-new GreaterThan($column, $value)
+new GreaterThan($column, $value);
 ```
 
 Adds `WHERE column > value` condition.
@@ -39,7 +39,7 @@ $repo->addCriteria(new GreaterThan('age', 18));
 ### GreaterThanOrEqual
 
 ```php
-new GreaterThanOrEqual($column, $value)
+new GreaterThanOrEqual($column, $value);
 ```
 
 Adds `WHERE column >= value` condition.
@@ -47,7 +47,7 @@ Adds `WHERE column >= value` condition.
 ### LessThan
 
 ```php
-new LessThan($column, $value)
+new LessThan($column, $value);
 ```
 
 Adds `WHERE column < value` condition.
@@ -55,7 +55,7 @@ Adds `WHERE column < value` condition.
 ### LessThanOrEqual
 
 ```php
-new LessThanOrEqual($column, $value)
+new LessThanOrEqual($column, $value);
 ```
 
 Adds `WHERE column <= value` condition.
@@ -65,7 +65,7 @@ Adds `WHERE column <= value` condition.
 ### IsNull
 
 ```php
-new IsNull($column)
+new IsNull($column);
 ```
 
 Adds `WHERE column IS NULL` condition.
@@ -73,7 +73,7 @@ Adds `WHERE column IS NULL` condition.
 ### NotNull
 
 ```php
-new NotNull($column)
+new NotNull($column);
 ```
 
 Adds `WHERE column IS NOT NULL` condition.
@@ -83,7 +83,7 @@ Adds `WHERE column IS NOT NULL` condition.
 ### IsTrue
 
 ```php
-new IsTrue($column)
+new IsTrue($column);
 ```
 
 Adds `WHERE column = 1` condition.
@@ -95,7 +95,7 @@ $repo->addCriteria(new IsTrue('is_published'));
 ### IsFalse
 
 ```php
-new IsFalse($column)
+new IsFalse($column);
 ```
 
 Adds `WHERE column = 0` condition.
@@ -121,7 +121,7 @@ Handles both string and numeric values with proper escaping.
 ### OrEquals
 
 ```php
-new OrEquals($column, $value)
+new OrEquals($column, $value);
 ```
 
 Adds `WHERE column = value` condition with OR connector instead of AND.
@@ -143,7 +143,7 @@ $repo->addCriteria(new OrderBy('created_at', 'DESC'));
 ### GroupBy
 
 ```php
-new GroupBy($column)
+new GroupBy($column);
 ```
 
 Adds `GROUP BY column` clause.
@@ -170,18 +170,19 @@ class BetweenDates implements CriteriaInterface
     private $column;
     private $startDate;
     private $endDate;
-    
+
     public function __construct($column, $startDate, $endDate)
     {
         $this->column = $column;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
     }
-    
+
     public function apply(QueryBuilder $queryBuilder)
     {
-        $queryBuilder->where($this->column, '>=', $this->startDate)
-                     ->where($this->column, '<=', $this->endDate);
+        $queryBuilder
+            ->where($this->column, '>=', $this->startDate)
+            ->where($this->column, '<=', $this->endDate);
     }
 }
 ```
